@@ -1,0 +1,191 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------ *
+ *  Nifty Needle — Design System
+ *  A warm, handcrafted luxury palette. Serif display + modern sans.
+ * ------------------------------------------------------------------ */
+
+@theme {
+  /* Brand palette */
+  --color-warm-white: #faf8f4;
+  --color-cream: #f3ece0;
+  --color-beige: #e6dac6;
+  --color-beige-deep: #d6c3a5;
+  --color-sand: #cbb794;
+
+  /* Brand blue family. Token names kept as brown/brown-deep/espresso
+     to avoid churn across components — the VALUES are now Yale blue. */
+  --color-brown: #2f66a6; /* medium Yale blue */
+  --color-brown-deep: #00356b; /* Yale Blue — primary */
+  --color-espresso: #0a2140; /* deep navy */
+
+  --color-sage: #8fa57e;
+  --color-sage-deep: #6e8560;
+
+  --color-pink: #d3a7a1;
+  --color-pink-deep: #c0857e;
+
+  /* Semantic tokens (light theme defaults) */
+  --color-background: #f7f9fc;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef2f8;
+  --color-foreground: #14243d;
+  --color-muted: #5f7085;
+  --color-border: #dde4ee;
+  --color-primary: #00356b;
+  --color-primary-foreground: #f7f9fc;
+  --color-accent: #c0857e;
+  --color-ring: #00356b;
+
+  /* Typography */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), ui-serif, Georgia, serif;
+
+  /* Radius */
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+  --radius-3xl: 2.5rem;
+
+  /* Shadows */
+  --shadow-soft: 0 4px 24px -8px rgba(58, 46, 33, 0.12);
+  --shadow-lift: 0 20px 50px -20px rgba(58, 46, 33, 0.25);
+
+  /* Animations */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 9s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.5s linear infinite;
+}
+
+/* Dark theme overrides (.dark class toggled by the theme provider) */
+.dark {
+  --color-background: #0a1a2f;
+  --color-surface: #11243d;
+  --color-surface-muted: #182f4b;
+  --color-foreground: #e6eef8;
+  --color-muted: #92a6c0;
+  --color-border: #254059;
+  --color-primary: #7ea9d6;
+  --color-primary-foreground: #0a1a2f;
+  --color-accent: #d3a7a1;
+  --color-ring: #7ea9d6;
+  /* Brand blue tokens tuned for legibility on dark navy */
+  --color-brown: #6f9fd0;
+  --color-brown-deep: #1f5896;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(3deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background-color: var(--color-pink);
+    color: var(--color-espresso);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface-muted);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-beige-deep);
+    border-radius: 9999px;
+    border: 2px solid var(--color-surface-muted);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-brown);
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-gradient {
+    background: linear-gradient(
+      120deg,
+      var(--color-brown-deep),
+      var(--color-accent),
+      var(--color-sage-deep)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      110deg,
+      transparent 20%,
+      color-mix(in srgb, var(--color-warm-white) 60%, transparent) 40%,
+      transparent 60%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+  }
+
+  .section-px {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  @media (min-width: 768px) {
+    .section-px {
+      padding-left: 3rem;
+      padding-right: 3rem;
+    }
+  }
+  @media (min-width: 1280px) {
+    .section-px {
+      padding-left: 5rem;
+      padding-right: 5rem;
+    }
+  }
+}
