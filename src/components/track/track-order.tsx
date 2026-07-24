@@ -1,26 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { PackageSearch } from "lucide-react";
-import { getOrder, type Order } from "@/lib/orders";
 import { formatPrice } from "@/lib/utils";
+import type { OrderStatus } from "@/lib/orders";
 import { OrderTimeline, StatusBadge } from "@/components/account/order-timeline";
+import { lookupOrder, type TrackedOrder } from "@/app/track/actions";
 
 export function TrackOrder() {
+  const searchParams = useSearchParams();
   const [id, setId] = useState("");
-  const [result, setResult] = useState<Order | null>(null);
+  const [result, setResult] = useState<TrackedOrder | null>(null);
   const [searched, setSearched] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const autoRan = useRef(false);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setResult(getOrder(id.trim().toUpperCase()) ?? null);
-    setSearched(true);
-  };
+  const runLookup = (value: string) =>
+    startTransition(async () => {
+      const found = await lookupOrder(value);
+      setResult(found);
+      setSearched(true);
+    });
+
+  // Auto-lookup when arriving from checkout (?order=NN-1042).
+  useEffect(() => {
+    const fromQuery = searchParams.get("order");
+    if (fromQuery && !autoRan.current) {
+      autoRan.current = true;
+      setId(fromQuery);
+      runLookup(fromQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <div className="section-px mx-auto max-w-3xl py-12">
       <form
-        onSubmit={handleSearch}
+        onSubmit={(e) => {
+          e.preventDefault();
+          runLookup(id);
+        }}
         className="flex flex-col gap-3 rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)] sm:flex-row"
       >
         <div className="relative flex-1">
@@ -28,20 +48,21 @@ export function TrackOrder() {
           <input
             value={id}
             onChange={(e) => setId(e.target.value)}
-            placeholder="Enter your order number (try NN-1042)"
+            placeholder="Enter your order number (e.g. NN-1001)"
             className="w-full rounded-full border border-border bg-surface-muted/40 py-3 pl-12 pr-4 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <button className="rounded-full bg-primary px-7 py-3 text-sm font-medium text-primary-foreground">
-          Track order
+        <button
+          disabled={pending}
+          className="rounded-full bg-primary px-7 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        >
+          {pending ? "Searching…" : "Track order"}
         </button>
       </form>
 
-      {searched && !result && (
+      {searched && !result && !pending && (
         <div className="mt-8 rounded-3xl border border-dashed border-border py-16 text-center">
-          <p className="font-serif text-2xl text-foreground">
-            No order found
-          </p>
+          <p className="font-serif text-2xl text-foreground">No order found</p>
           <p className="mt-1 text-muted">
             Double-check your order number and try again.
           </p>
@@ -52,43 +73,39 @@ export function TrackOrder() {
         <div className="mt-8 rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
             <div>
-              <p className="font-serif text-2xl text-foreground">{result.id}</p>
-              <p className="text-sm text-muted">Placed on {result.date}</p>
+              <p className="font-serif text-2xl text-foreground">
+                {result.order_number}
+              </p>
+              <p className="text-sm text-muted">
+                Placed on {new Date(result.created_at).toLocaleDateString()}
+              </p>
             </div>
             <div className="flex items-center gap-3">
-              <StatusBadge status={result.status} />
+              <StatusBadge status={result.status as OrderStatus} />
               <span className="font-medium text-foreground">
-                {formatPrice(result.total)}
+                {formatPrice(result.total, result.currency)}
               </span>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 py-5">
-            {result.items.map((it, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span
-                  className="h-14 w-14 rounded-2xl"
-                  style={{ background: it.swatch }}
-                />
-                <span className="text-sm">
-                  <span className="block font-medium text-foreground">
-                    {it.name}
-                  </span>
-                  <span className="text-muted">Qty {it.quantity}</span>
+          {result.items?.length > 0 && (
+            <div className="flex flex-wrap gap-4 py-5 text-sm">
+              {result.items.map((it, i) => (
+                <span key={i} className="text-muted">
+                  <span className="font-medium text-foreground">{it.name}</span> ×{" "}
+                  {it.quantity}
                 </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="rounded-2xl bg-surface-muted/40 p-5">
-            <OrderTimeline status={result.status} />
+            <OrderTimeline status={result.status as OrderStatus} />
           </div>
           {result.tracking && (
             <p className="mt-4 text-sm text-muted">
               Carrier tracking:{" "}
-              <span className="font-medium text-foreground">
-                {result.tracking}
-              </span>
+              <span className="font-medium text-foreground">{result.tracking}</span>
             </p>
           )}
         </div>

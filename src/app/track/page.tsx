@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/page-header";
 import { TrackOrder } from "@/components/track/track-order";
@@ -16,7 +17,9 @@ export default function TrackPage() {
         description="Enter your order number to see exactly where your handmade piece is on its journey."
         crumbs={[{ label: "Order Tracking" }]}
       />
-      <TrackOrder />
+      <Suspense>
+        <TrackOrder />
+      </Suspense>
     </>
   );
 }

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CreditCard, Check, Lock, ShieldCheck } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { formatPrice } from "@/lib/utils";
 import { ButtonLink } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
+import { placeOrder, type PlaceOrderState } from "@/app/checkout/actions";
 
 const FREE_SHIP = 75;
 
@@ -15,22 +17,31 @@ const field =
 
 export function CheckoutView() {
   const { cart, cartSubtotal, clearCart } = useStore();
-  const [placed, setPlaced] = useState(false);
+  const toast = useToast();
   const [shippingMethod, setShippingMethod] = useState("standard");
+  const [state, formAction, pending] = useActionState<PlaceOrderState, FormData>(
+    placeOrder,
+    {},
+  );
+  const [placedNumber, setPlacedNumber] = useState<string | null>(null);
 
   const shipping =
     cartSubtotal >= FREE_SHIP ? 0 : shippingMethod === "express" ? 16 : 6;
-  const tax = cartSubtotal * 0.05;
+  const tax = Math.round(cartSubtotal * 0.05 * 100) / 100;
   const total = cartSubtotal + shipping + tax;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPlaced(true);
-    clearCart();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  useEffect(() => {
+    if (state.ok && state.orderNumber) {
+      setPlacedNumber(state.orderNumber);
+      clearCart();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (state.error) {
+      toast(state.error, "info");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
-  if (placed) {
+  if (placedNumber) {
     return (
       <div className="section-px mx-auto flex max-w-2xl flex-col items-center justify-center gap-5 py-32 text-center">
         <motion.span
@@ -45,14 +56,16 @@ export function CheckoutView() {
           Thank you for your order!
         </h1>
         <p className="max-w-md text-muted">
-          A confirmation email is on its way. We&apos;ll begin handcrafting your
-          order right away and keep you posted at every step.
+          Your order is saved and I&apos;ll begin handcrafting it right away.
+          Keep your order number to track its progress.
         </p>
         <p className="rounded-full bg-surface-muted px-5 py-2 text-sm">
-          Order <span className="font-semibold">#NN-{Math.floor(1000 + total)}</span>
+          Order <span className="font-semibold">{placedNumber}</span>
         </p>
         <div className="mt-4 flex gap-3">
-          <ButtonLink href="/account/orders">Track your order</ButtonLink>
+          <ButtonLink href={`/track?order=${placedNumber}`}>
+            Track your order
+          </ButtonLink>
           <ButtonLink href="/shop" variant="outline">
             Continue shopping
           </ButtonLink>
@@ -81,31 +94,26 @@ export function CheckoutView() {
         Checkout
       </h1>
 
-      <form
-        onSubmit={handleSubmit}
-        className="grid gap-10 lg:grid-cols-[1fr_22rem]"
-      >
+      <form action={formAction} className="grid gap-10 lg:grid-cols-[1fr_22rem]">
+        {/* Cart snapshot for the server action */}
+        <input type="hidden" name="items" value={JSON.stringify(cart)} />
+
         <div className="space-y-10">
           {/* Contact */}
           <section>
-            <h2 className="mb-4 font-serif text-2xl text-foreground">
-              Contact
-            </h2>
+            <h2 className="mb-4 font-serif text-2xl text-foreground">Contact</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <input required placeholder="First name" className={field} />
-              <input required placeholder="Last name" className={field} />
+              <input name="firstName" required placeholder="First name" className={field} />
+              <input name="lastName" required placeholder="Last name" className={field} />
               <input
+                name="email"
                 required
                 type="email"
                 placeholder="Email"
                 className={`${field} sm:col-span-2`}
               />
-              <input placeholder="Phone" className={`${field} sm:col-span-2`} />
+              <input name="phone" placeholder="Phone" className={`${field} sm:col-span-2`} />
             </div>
-            <label className="mt-3 flex items-center gap-2 text-sm text-muted">
-              <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary)]" />
-              Email me with news and exclusive offers
-            </label>
           </section>
 
           {/* Shipping */}
@@ -115,15 +123,15 @@ export function CheckoutView() {
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <input
+                name="address"
                 required
                 placeholder="Address"
                 className={`${field} sm:col-span-2`}
               />
-              <input placeholder="Apartment, suite (optional)" className={`${field} sm:col-span-2`} />
-              <input required placeholder="City" className={field} />
-              <input required placeholder="Postal code" className={field} />
-              <input required placeholder="Country" className={field} />
-              <input required placeholder="State / Province" className={field} />
+              <input name="city" required placeholder="City" className={field} />
+              <input name="postal_code" required placeholder="Postal code" className={field} />
+              <input name="country" required placeholder="Country" className={field} />
+              <input name="state" placeholder="State / Province" className={field} />
             </div>
           </section>
 
@@ -149,6 +157,7 @@ export function CheckoutView() {
                     <input
                       type="radio"
                       name="shipping"
+                      value={m.id}
                       checked={shippingMethod === m.id}
                       onChange={() => setShippingMethod(m.id)}
                       className="h-4 w-4 accent-[var(--color-primary)]"
@@ -189,7 +198,8 @@ export function CheckoutView() {
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted">
-                Demo only — no real payment is processed. Stripe keys wire in here.
+                Card payment isn&apos;t live yet — your order is placed and saved,
+                and payment is arranged directly. Stripe wires in here later.
               </p>
             </div>
           </section>
@@ -203,8 +213,12 @@ export function CheckoutView() {
               {cart.map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
                   <div
-                    className="relative h-14 w-14 shrink-0 rounded-xl"
-                    style={{ background: item.swatch }}
+                    className="relative h-14 w-14 shrink-0 rounded-xl bg-cover bg-center"
+                    style={
+                      item.swatch.startsWith("http")
+                        ? { backgroundImage: `url(${item.swatch})` }
+                        : { background: item.swatch }
+                    }
                   >
                     <span className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-primary text-[0.6rem] font-semibold text-primary-foreground">
                       {item.quantity}
@@ -245,14 +259,15 @@ export function CheckoutView() {
 
             <button
               type="submit"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]"
+              disabled={pending}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] disabled:opacity-60"
             >
               <Lock className="h-4 w-4" />
-              Pay {formatPrice(total)}
+              {pending ? "Placing order…" : `Place order · ${formatPrice(total)}`}
             </button>
             <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted">
               <ShieldCheck className="h-3.5 w-3.5" />
-              Encrypted &amp; secure. You can also{" "}
+              Secure &amp; saved. You can also{" "}
               <Link href="/cart" className="underline">
                 edit your cart
               </Link>
