@@ -241,10 +241,10 @@ function ProductForm({
   }, [state]);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-espresso/40 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overflow-x-hidden bg-espresso/40 p-3 backdrop-blur-sm sm:p-4">
       <form
         action={formAction}
-        className="my-8 w-full max-w-2xl rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-lift)] md:p-8"
+        className="my-6 w-full max-w-2xl overflow-hidden rounded-3xl border border-border bg-surface p-5 shadow-[var(--shadow-lift)] sm:my-8 md:p-8"
       >
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-serif text-2xl text-foreground">
@@ -543,11 +543,11 @@ function OptionListEditor({
             <input
               value={o.label}
               onChange={(e) => update(i, { label: e.target.value })}
-              placeholder="Option name (e.g. Merino Wool)"
-              className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Option name"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
-            <div className="relative w-28 shrink-0">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">
+            <div className="relative w-20 shrink-0 sm:w-28">
+              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted">
                 +$
               </span>
               <input
@@ -556,7 +556,7 @@ function OptionListEditor({
                 min="0"
                 value={o.price}
                 onChange={(e) => update(i, { price: Number(e.target.value) })}
-                className="w-full rounded-lg border border-border bg-surface py-2 pl-8 pr-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-border bg-surface py-2 pl-7 pr-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <button
