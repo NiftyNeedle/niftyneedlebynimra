@@ -3,7 +3,11 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Pencil, Plus, Trash2, X } from "lucide-react";
-import type { Product } from "@/lib/types";
+import {
+  type Product,
+  type ProductCustomization,
+  ALL_CUSTOMIZATION,
+} from "@/lib/types";
 import { categories } from "@/lib/data";
 import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
@@ -170,6 +174,10 @@ function ProductForm({
   onSaved: () => void;
 }) {
   const toast = useToast();
+  const [customizable, setCustomizable] = useState<boolean>(
+    base ? Boolean(base.customizable) : false,
+  );
+  const czDefaults: ProductCustomization = base?.customization ?? ALL_CUSTOMIZATION;
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     upsertProduct,
     {},
@@ -335,23 +343,79 @@ function ProductForm({
           />
 
           <div className="sm:col-span-2 grid grid-cols-2 gap-3 rounded-2xl bg-surface-muted/50 p-4 sm:grid-cols-4">
-            {[
-              { name: "in_stock", label: "In stock", checked: base ? base.inStock : true },
-              { name: "customizable", label: "Customizable", checked: base?.customizable },
-              { name: "is_best_seller", label: "Best seller", checked: base?.isBestSeller },
-              { name: "is_new", label: "New arrival", checked: base?.isNew },
-            ].map((t) => (
-              <label key={t.name} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name={t.name}
-                  defaultChecked={t.checked}
-                  className="h-4 w-4 accent-[var(--color-primary)]"
-                />
-                {t.label}
-              </label>
-            ))}
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="in_stock"
+                defaultChecked={base ? base.inStock : true}
+                className="h-4 w-4 accent-[var(--color-primary)]"
+              />
+              In stock
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="customizable"
+                defaultChecked={Boolean(base?.customizable)}
+                onChange={(e) => setCustomizable(e.target.checked)}
+                className="h-4 w-4 accent-[var(--color-primary)]"
+              />
+              Customizable
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="is_best_seller"
+                defaultChecked={Boolean(base?.isBestSeller)}
+                className="h-4 w-4 accent-[var(--color-primary)]"
+              />
+              Best seller
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="is_new"
+                defaultChecked={Boolean(base?.isNew)}
+                className="h-4 w-4 accent-[var(--color-primary)]"
+              />
+              New arrival
+            </label>
           </div>
+
+          {customizable && (
+            <div className="sm:col-span-2 rounded-2xl border border-border p-4">
+              <p className="text-sm font-medium text-foreground">
+                Customization options shown to customers
+              </p>
+              <p className="mb-3 mt-0.5 text-xs text-muted">
+                Tick the choices this product should offer. “Choose colour” uses
+                the colours listed above.
+              </p>
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {(
+                  [
+                    { key: "color", name: "cz_color", label: "Choose colour" },
+                    { key: "yarn", name: "cz_yarn", label: "Choose yarn type" },
+                    { key: "size", name: "cz_size", label: "Choose size" },
+                    { key: "name", name: "cz_name", label: "Personalised name" },
+                    { key: "giftMessage", name: "cz_gift", label: "Gift message" },
+                    { key: "instructions", name: "cz_instructions", label: "Special instructions" },
+                    { key: "referenceImage", name: "cz_reference", label: "Reference image upload" },
+                  ] as { key: keyof ProductCustomization; name: string; label: string }[]
+                ).map((o) => (
+                  <label key={o.name} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name={o.name}
+                      defaultChecked={Boolean(czDefaults[o.key])}
+                      className="h-4 w-4 accent-[var(--color-primary)]"
+                    />
+                    {o.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end gap-3">

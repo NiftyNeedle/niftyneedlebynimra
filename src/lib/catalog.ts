@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Product } from "./types";
+import type { Product, ProductCustomization } from "./types";
 import {
   products as mockProducts,
   getProductBySlug as mockGetBySlug,
@@ -34,6 +34,7 @@ interface ProductRow {
   is_best_seller: boolean;
   is_new: boolean;
   customizable: boolean;
+  customization: ProductCustomization | null;
   in_stock: boolean;
 }
 
@@ -57,6 +58,7 @@ function mapRow(r: ProductRow): Product {
     isBestSeller: r.is_best_seller,
     isNew: r.is_new,
     customizable: r.customizable,
+    customization: r.customization ?? undefined,
     inStock: r.in_stock,
   };
 }

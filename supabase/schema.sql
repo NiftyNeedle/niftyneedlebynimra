@@ -23,6 +23,7 @@ create table if not exists public.products (
   is_best_seller    boolean not null default false,
   is_new            boolean not null default false,
   customizable      boolean not null default false,
+  customization     jsonb,
   in_stock          boolean not null default true,
   archived          boolean not null default false,
   sort_order        integer not null default 0,

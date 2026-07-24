@@ -22,6 +22,29 @@ export interface ProductImage {
   alt: string;
 }
 
+/** Which customization options a product offers to customers.
+ *  When a product is customizable but this is absent, all are treated as on. */
+export interface ProductCustomization {
+  color?: boolean;
+  yarn?: boolean;
+  size?: boolean;
+  name?: boolean;
+  giftMessage?: boolean;
+  instructions?: boolean;
+  referenceImage?: boolean;
+}
+
+/** Every customization option enabled — the back-compat default. */
+export const ALL_CUSTOMIZATION: ProductCustomization = {
+  color: true,
+  yarn: true,
+  size: true,
+  name: true,
+  giftMessage: true,
+  instructions: true,
+  referenceImage: true,
+};
+
 export interface Product {
   id: string;
   slug: string;
@@ -43,6 +66,7 @@ export interface Product {
   isBestSeller?: boolean;
   isNew?: boolean;
   customizable?: boolean;
+  customization?: ProductCustomization;
   inStock: boolean;
   shortDescription: string;
 }

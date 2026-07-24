@@ -13,7 +13,7 @@ import {
   Truck,
   Upload,
 } from "lucide-react";
-import type { Product } from "@/lib/types";
+import { type Product, ALL_CUSTOMIZATION } from "@/lib/types";
 import type { Review } from "@/lib/reviews";
 import { formatPrice, cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
@@ -46,6 +46,11 @@ export function ProductDetail({
   const toast = useToast();
   const wishlisted = isWishlisted(product.id);
 
+  // Which options this product offers (all-on if customizable with none set).
+  const cz = product.customizable
+    ? product.customization ?? ALL_CUSTOMIZATION
+    : null;
+
   const [color, setColor] = useState(product.colors[0]);
   const [yarn, setYarn] = useState(yarnTypes[0].label);
   const [size, setSize] = useState(sizes[0].label);
@@ -58,33 +63,31 @@ export function ProductDetail({
 
   const base = product.salePrice ?? product.price;
   const unitPrice = useMemo(() => {
-    const yarnAdd = yarnTypes.find((y) => y.label === yarn)?.price ?? 0;
-    const sizeAdd = sizes.find((s) => s.label === size)?.price ?? 0;
-    return base + (product.customizable ? yarnAdd + sizeAdd : 0);
-  }, [base, yarn, size, product.customizable]);
+    const yarnAdd = cz?.yarn ? yarnTypes.find((y) => y.label === yarn)?.price ?? 0 : 0;
+    const sizeAdd = cz?.size ? sizes.find((s) => s.label === size)?.price ?? 0 : 0;
+    return base + yarnAdd + sizeAdd;
+  }, [base, yarn, size, cz]);
 
   const productionDays = useMemo(() => {
     let d = 5;
-    if (size === "Large") d += 3;
-    if (yarn !== "Premium Cotton") d += 2;
-    if (name || giftMessage) d += 1;
+    if (cz?.size && size === "Large") d += 3;
+    if (cz?.yarn && yarn !== "Premium Cotton") d += 2;
+    if ((cz?.name && name) || (cz?.giftMessage && giftMessage)) d += 1;
     return d;
-  }, [size, yarn, name, giftMessage]);
+  }, [size, yarn, name, giftMessage, cz]);
 
   const hasPhoto = Boolean(product.imageUrl);
   const gallery = [product.swatch, product.swatch, product.swatch, product.swatch];
 
   const handleAdd = () => {
+    const options: Record<string, string> = {};
+    if (cz?.color && color) options.Colour = color;
+    if (cz?.yarn) options.Yarn = yarn;
+    if (cz?.size) options.Size = size;
+    if (cz?.name && name) options.Name = name;
     addToCart(product, {
       quantity,
-      options: product.customizable
-        ? {
-            Colour: color,
-            Yarn: yarn,
-            Size: size,
-            ...(name ? { Name: name } : {}),
-          }
-        : undefined,
+      options: cz && Object.keys(options).length ? options : undefined,
     });
     toast(`${product.name} added to cart`);
   };
@@ -187,108 +190,124 @@ export function ProductDetail({
                 <BadgeCheck className="h-4 w-4" /> Customizable — make it yours
               </p>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">Colour</label>
-                <div className="flex flex-wrap gap-2">
-                  {product.colors.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setColor(c)}
-                      className={cn(
-                        "rounded-full border px-4 py-2 text-sm transition-colors",
-                        color === c
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border hover:bg-surface",
-                      )}
-                    >
-                      {c}
-                    </button>
-                  ))}
+              {cz?.color && product.colors.length > 0 && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium">Colour</label>
+                  <div className="flex flex-wrap gap-2">
+                    {product.colors.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setColor(c)}
+                        className={cn(
+                          "rounded-full border px-4 py-2 text-sm transition-colors",
+                          color === c
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border hover:bg-surface",
+                        )}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              {(cz?.yarn || cz?.size) && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {cz?.yarn && (
+                    <div>
+                      <label className="mb-2 block text-sm font-medium">
+                        Yarn Type
+                      </label>
+                      <select
+                        value={yarn}
+                        onChange={(e) => setYarn(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        {yarnTypes.map((y) => (
+                          <option key={y.label} value={y.label}>
+                            {y.label}
+                            {y.price ? ` (+${formatPrice(y.price)})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {cz?.size && (
+                    <div>
+                      <label className="mb-2 block text-sm font-medium">Size</label>
+                      <select
+                        value={size}
+                        onChange={(e) => setSize(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        {sizes.map((s) => (
+                          <option key={s.label} value={s.label}>
+                            {s.label}
+                            {s.price ? ` (+${formatPrice(s.price)})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {cz?.name && (
                 <div>
                   <label className="mb-2 block text-sm font-medium">
-                    Yarn Type
+                    Personalized Name{" "}
+                    <span className="text-muted">(optional)</span>
                   </label>
-                  <select
-                    value={yarn}
-                    onChange={(e) => setYarn(e.target.value)}
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Emma"
                     className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    {yarnTypes.map((y) => (
-                      <option key={y.label} value={y.label}>
-                        {y.label}
-                        {y.price ? ` (+${formatPrice(y.price)})` : ""}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
+              )}
+
+              {cz?.giftMessage && (
                 <div>
-                  <label className="mb-2 block text-sm font-medium">Size</label>
-                  <select
-                    value={size}
-                    onChange={(e) => setSize(e.target.value)}
+                  <label className="mb-2 block text-sm font-medium">
+                    Gift Message <span className="text-muted">(optional)</span>
+                  </label>
+                  <textarea
+                    value={giftMessage}
+                    onChange={(e) => setGiftMessage(e.target.value)}
+                    rows={2}
+                    placeholder="A little note to include…"
                     className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    {sizes.map((s) => (
-                      <option key={s.label} value={s.label}>
-                        {s.label}
-                        {s.price ? ` (+${formatPrice(s.price)})` : ""}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Personalized Name{" "}
-                  <span className="text-muted">(optional)</span>
-                </label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Emma"
-                  className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
+              {cz?.instructions && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
+                    Special Instructions{" "}
+                    <span className="text-muted">(optional)</span>
+                  </label>
+                  <textarea
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    rows={2}
+                    placeholder="Any special requests?"
+                    className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              )}
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Gift Message <span className="text-muted">(optional)</span>
-                </label>
-                <textarea
-                  value={giftMessage}
-                  onChange={(e) => setGiftMessage(e.target.value)}
-                  rows={2}
-                  placeholder="A little note to include…"
-                  className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Special Instructions{" "}
-                  <span className="text-muted">(optional)</span>
-                </label>
-                <textarea
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  rows={2}
-                  placeholder="Any special requests?"
-                  className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brown/40 bg-surface px-4 py-4 text-sm text-muted transition-colors hover:border-brown hover:text-foreground"
-              >
-                <Upload className="h-4 w-4" />
-                Upload a reference image
-              </button>
+              {cz?.referenceImage && (
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brown/40 bg-surface px-4 py-4 text-sm text-muted transition-colors hover:border-brown hover:text-foreground"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload a reference image
+                </button>
+              )}
 
               <p className="text-sm text-muted">
                 Estimated production time:{" "}

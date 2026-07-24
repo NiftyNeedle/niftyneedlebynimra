@@ -83,6 +83,19 @@ export async function upsertProduct(
         ? await uploadImage(admin, file, slug)
         : null;
 
+    const customizable = formData.get("customizable") === "on";
+    const customization = customizable
+      ? {
+          color: formData.get("cz_color") === "on",
+          yarn: formData.get("cz_yarn") === "on",
+          size: formData.get("cz_size") === "on",
+          name: formData.get("cz_name") === "on",
+          giftMessage: formData.get("cz_gift") === "on",
+          instructions: formData.get("cz_instructions") === "on",
+          referenceImage: formData.get("cz_reference") === "on",
+        }
+      : null;
+
     const row: Record<string, unknown> = {
       slug,
       name,
@@ -100,7 +113,8 @@ export async function upsertProduct(
       materials: parseList(formData.get("materials")),
       is_best_seller: formData.get("is_best_seller") === "on",
       is_new: formData.get("is_new") === "on",
-      customizable: formData.get("customizable") === "on",
+      customizable,
+      customization,
       in_stock: formData.get("in_stock") === "on",
     };
     if (imageUrl) row.image_url = imageUrl;
