@@ -195,7 +195,6 @@ function ProductForm({
     name: Boolean(czDefaults.name),
     giftMessage: Boolean(czDefaults.giftMessage),
     instructions: Boolean(czDefaults.instructions),
-    referenceImage: Boolean(czDefaults.referenceImage),
   });
   const [yarnOptions, setYarnOptions] = useState<CustomizationOption[]>(
     base?.customization?.yarnOptions?.length
@@ -221,7 +220,6 @@ function ProductForm({
         name: cz.name,
         giftMessage: cz.giftMessage,
         instructions: cz.instructions,
-        referenceImage: cz.referenceImage,
       }
     : null;
 
@@ -450,7 +448,6 @@ function ProductForm({
                     { key: "name", label: "Personalised name" },
                     { key: "giftMessage", label: "Gift message" },
                     { key: "instructions", label: "Special instructions" },
-                    { key: "referenceImage", label: "Reference image upload" },
                   ] as { key: keyof typeof cz; label: string }[]
                 ).map((o) => (
                   <label key={o.key} className="flex items-center gap-2 text-sm">

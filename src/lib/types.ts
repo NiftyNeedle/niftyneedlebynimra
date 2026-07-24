@@ -42,7 +42,6 @@ export interface ProductCustomization {
   name?: boolean;
   giftMessage?: boolean;
   instructions?: boolean;
-  referenceImage?: boolean;
 }
 
 /** Every customization option enabled — the back-compat default. */
@@ -53,7 +52,6 @@ export const ALL_CUSTOMIZATION: ProductCustomization = {
   name: true,
   giftMessage: true,
   instructions: true,
-  referenceImage: true,
 };
 
 export interface Product {

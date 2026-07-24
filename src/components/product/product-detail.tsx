@@ -11,7 +11,6 @@ import {
   ShoppingBag,
   Star,
   Truck,
-  Upload,
 } from "lucide-react";
 import { type Product, ALL_CUSTOMIZATION } from "@/lib/types";
 import type { Review } from "@/lib/reviews";
@@ -299,16 +298,6 @@ export function ProductDetail({
                     className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
-              )}
-
-              {cz?.referenceImage && (
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brown/40 bg-surface px-4 py-4 text-sm text-muted transition-colors hover:border-brown hover:text-foreground"
-                >
-                  <Upload className="h-4 w-4" />
-                  Upload a reference image
-                </button>
               )}
 
               <p className="text-sm text-muted">
