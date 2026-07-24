@@ -15,21 +15,11 @@ import {
 } from "lucide-react";
 import { type Product, ALL_CUSTOMIZATION } from "@/lib/types";
 import type { Review } from "@/lib/reviews";
+import { DEFAULT_YARN_OPTIONS, DEFAULT_SIZE_OPTIONS } from "@/lib/customization";
 import { formatPrice, cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/components/ui/toast";
 import { ProductCard } from "@/components/home/product-card";
-
-const yarnTypes = [
-  { label: "Premium Cotton", price: 0 },
-  { label: "Merino Wool", price: 8 },
-  { label: "Bamboo Silk", price: 12 },
-];
-const sizes = [
-  { label: "Small", price: 0 },
-  { label: "Medium", price: 6 },
-  { label: "Large", price: 14 },
-];
 
 const tabs = ["Description", "Materials", "Care", "Shipping"] as const;
 
@@ -51,9 +41,19 @@ export function ProductDetail({
     ? product.customization ?? ALL_CUSTOMIZATION
     : null;
 
+  // Per-product yarn/size choices, falling back to defaults.
+  const yarnTypes =
+    cz?.yarnOptions && cz.yarnOptions.length
+      ? cz.yarnOptions
+      : DEFAULT_YARN_OPTIONS;
+  const sizes =
+    cz?.sizeOptions && cz.sizeOptions.length
+      ? cz.sizeOptions
+      : DEFAULT_SIZE_OPTIONS;
+
   const [color, setColor] = useState(product.colors[0]);
-  const [yarn, setYarn] = useState(yarnTypes[0].label);
-  const [size, setSize] = useState(sizes[0].label);
+  const [yarn, setYarn] = useState(yarnTypes[0]?.label ?? "");
+  const [size, setSize] = useState(sizes[0]?.label ?? "");
   const [name, setName] = useState("");
   const [giftMessage, setGiftMessage] = useState("");
   const [instructions, setInstructions] = useState("");
@@ -62,19 +62,21 @@ export function ProductDetail({
   const [tab, setTab] = useState<(typeof tabs)[number]>("Description");
 
   const base = product.salePrice ?? product.price;
-  const unitPrice = useMemo(() => {
-    const yarnAdd = cz?.yarn ? yarnTypes.find((y) => y.label === yarn)?.price ?? 0 : 0;
-    const sizeAdd = cz?.size ? sizes.find((s) => s.label === size)?.price ?? 0 : 0;
-    return base + yarnAdd + sizeAdd;
-  }, [base, yarn, size, cz]);
+  const yarnAdd = cz?.yarn ? yarnTypes.find((y) => y.label === yarn)?.price ?? 0 : 0;
+  const sizeAdd = cz?.size ? sizes.find((s) => s.label === size)?.price ?? 0 : 0;
+
+  const unitPrice = useMemo(
+    () => base + yarnAdd + sizeAdd,
+    [base, yarnAdd, sizeAdd],
+  );
 
   const productionDays = useMemo(() => {
     let d = 5;
-    if (cz?.size && size === "Large") d += 3;
-    if (cz?.yarn && yarn !== "Premium Cotton") d += 2;
+    if (sizeAdd > 0) d += 3;
+    if (yarnAdd > 0) d += 2;
     if ((cz?.name && name) || (cz?.giftMessage && giftMessage)) d += 1;
     return d;
-  }, [size, yarn, name, giftMessage, cz]);
+  }, [sizeAdd, yarnAdd, name, giftMessage, cz]);
 
   const hasPhoto = Boolean(product.imageUrl);
   const gallery = [product.swatch, product.swatch, product.swatch, product.swatch];

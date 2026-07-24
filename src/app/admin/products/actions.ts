@@ -84,17 +84,30 @@ export async function upsertProduct(
         : null;
 
     const customizable = formData.get("customizable") === "on";
-    const customization = customizable
-      ? {
-          color: formData.get("cz_color") === "on",
-          yarn: formData.get("cz_yarn") === "on",
-          size: formData.get("cz_size") === "on",
-          name: formData.get("cz_name") === "on",
-          giftMessage: formData.get("cz_gift") === "on",
-          instructions: formData.get("cz_instructions") === "on",
-          referenceImage: formData.get("cz_reference") === "on",
+    let customization: Record<string, unknown> | null = null;
+    if (customizable) {
+      try {
+        const parsed = JSON.parse(String(formData.get("customization") ?? "null"));
+        if (parsed && typeof parsed === "object") {
+          const sanitizeOptions = (list: unknown) =>
+            Array.isArray(list)
+              ? list
+                  .map((o) => ({
+                    label: String((o as { label?: unknown }).label ?? "").trim(),
+                    price: Number((o as { price?: unknown }).price) || 0,
+                  }))
+                  .filter((o) => o.label)
+              : [];
+          if (parsed.yarnOptions)
+            parsed.yarnOptions = sanitizeOptions(parsed.yarnOptions);
+          if (parsed.sizeOptions)
+            parsed.sizeOptions = sanitizeOptions(parsed.sizeOptions);
+          customization = parsed;
         }
-      : null;
+      } catch {
+        customization = null;
+      }
+    }
 
     const row: Record<string, unknown> = {
       slug,

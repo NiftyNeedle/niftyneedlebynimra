@@ -1,13 +1,22 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import {
+  useActionState,
+  useEffect,
+  useState,
+  useTransition,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   type Product,
   type ProductCustomization,
+  type CustomizationOption,
   ALL_CUSTOMIZATION,
 } from "@/lib/types";
+import { DEFAULT_YARN_OPTIONS, DEFAULT_SIZE_OPTIONS } from "@/lib/customization";
 import { categories } from "@/lib/data";
 import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
@@ -178,6 +187,44 @@ function ProductForm({
     base ? Boolean(base.customizable) : false,
   );
   const czDefaults: ProductCustomization = base?.customization ?? ALL_CUSTOMIZATION;
+
+  const [cz, setCz] = useState({
+    color: Boolean(czDefaults.color),
+    yarn: Boolean(czDefaults.yarn),
+    size: Boolean(czDefaults.size),
+    name: Boolean(czDefaults.name),
+    giftMessage: Boolean(czDefaults.giftMessage),
+    instructions: Boolean(czDefaults.instructions),
+    referenceImage: Boolean(czDefaults.referenceImage),
+  });
+  const [yarnOptions, setYarnOptions] = useState<CustomizationOption[]>(
+    base?.customization?.yarnOptions?.length
+      ? base.customization.yarnOptions
+      : DEFAULT_YARN_OPTIONS,
+  );
+  const [sizeOptions, setSizeOptions] = useState<CustomizationOption[]>(
+    base?.customization?.sizeOptions?.length
+      ? base.customization.sizeOptions
+      : DEFAULT_SIZE_OPTIONS,
+  );
+
+  const setczKey = (key: keyof typeof cz, val: boolean) =>
+    setCz((prev) => ({ ...prev, [key]: val }));
+
+  const builtCustomization: ProductCustomization | null = customizable
+    ? {
+        color: cz.color,
+        yarn: cz.yarn,
+        ...(cz.yarn ? { yarnOptions } : {}),
+        size: cz.size,
+        ...(cz.size ? { sizeOptions } : {}),
+        name: cz.name,
+        giftMessage: cz.giftMessage,
+        instructions: cz.instructions,
+        referenceImage: cz.referenceImage,
+      }
+    : null;
+
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     upsertProduct,
     {},
@@ -383,39 +430,63 @@ function ProductForm({
           </div>
 
           {customizable && (
-            <div className="sm:col-span-2 rounded-2xl border border-border p-4">
-              <p className="text-sm font-medium text-foreground">
-                Customization options shown to customers
-              </p>
-              <p className="mb-3 mt-0.5 text-xs text-muted">
-                Tick the choices this product should offer. “Choose colour” uses
-                the colours listed above.
-              </p>
+            <div className="sm:col-span-2 space-y-4 rounded-2xl border border-border p-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Customization options shown to customers
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  Tick what this product should offer. “Choose colour” uses the
+                  colours listed above.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 {(
                   [
-                    { key: "color", name: "cz_color", label: "Choose colour" },
-                    { key: "yarn", name: "cz_yarn", label: "Choose yarn type" },
-                    { key: "size", name: "cz_size", label: "Choose size" },
-                    { key: "name", name: "cz_name", label: "Personalised name" },
-                    { key: "giftMessage", name: "cz_gift", label: "Gift message" },
-                    { key: "instructions", name: "cz_instructions", label: "Special instructions" },
-                    { key: "referenceImage", name: "cz_reference", label: "Reference image upload" },
-                  ] as { key: keyof ProductCustomization; name: string; label: string }[]
+                    { key: "color", label: "Choose colour" },
+                    { key: "yarn", label: "Choose yarn type" },
+                    { key: "size", label: "Choose size" },
+                    { key: "name", label: "Personalised name" },
+                    { key: "giftMessage", label: "Gift message" },
+                    { key: "instructions", label: "Special instructions" },
+                    { key: "referenceImage", label: "Reference image upload" },
+                  ] as { key: keyof typeof cz; label: string }[]
                 ).map((o) => (
-                  <label key={o.name} className="flex items-center gap-2 text-sm">
+                  <label key={o.key} className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
-                      name={o.name}
-                      defaultChecked={Boolean(czDefaults[o.key])}
+                      checked={cz[o.key]}
+                      onChange={(e) => setczKey(o.key, e.target.checked)}
                       className="h-4 w-4 accent-[var(--color-primary)]"
                     />
                     {o.label}
                   </label>
                 ))}
               </div>
+
+              {cz.yarn && (
+                <OptionListEditor
+                  title="Yarn choices"
+                  options={yarnOptions}
+                  setOptions={setYarnOptions}
+                />
+              )}
+              {cz.size && (
+                <OptionListEditor
+                  title="Size choices"
+                  options={sizeOptions}
+                  setOptions={setSizeOptions}
+                />
+              )}
             </div>
           )}
+
+          <input
+            type="hidden"
+            name="customization"
+            value={JSON.stringify(builtCustomization)}
+          />
         </div>
 
         <div className="mt-6 flex justify-end gap-3">
@@ -435,6 +506,76 @@ function ProductForm({
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function OptionListEditor({
+  title,
+  options,
+  setOptions,
+}: {
+  title: string;
+  options: CustomizationOption[];
+  setOptions: Dispatch<SetStateAction<CustomizationOption[]>>;
+}) {
+  const update = (i: number, patch: Partial<CustomizationOption>) =>
+    setOptions((prev) => prev.map((o, j) => (j === i ? { ...o, ...patch } : o)));
+  const remove = (i: number) =>
+    setOptions((prev) => prev.filter((_, j) => j !== i));
+  const add = () => setOptions((prev) => [...prev, { label: "", price: 0 }]);
+
+  return (
+    <div className="rounded-xl bg-surface-muted/50 p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-sm font-medium text-foreground">{title}</span>
+        <button
+          type="button"
+          onClick={add}
+          className="text-xs font-medium text-accent hover:underline"
+        >
+          + Add option
+        </button>
+      </div>
+      <div className="space-y-2">
+        {options.map((o, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              value={o.label}
+              onChange={(e) => update(i, { label: e.target.value })}
+              placeholder="Option name (e.g. Merino Wool)"
+              className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            <div className="relative w-28 shrink-0">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">
+                +$
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={o.price}
+                onChange={(e) => update(i, { price: Number(e.target.value) })}
+                className="w-full rounded-lg border border-border bg-surface py-2 pl-8 pr-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              aria-label="Remove option"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted hover:bg-surface hover:text-accent"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+        {options.length === 0 && (
+          <p className="text-xs text-muted">No options yet — add at least one.</p>
+        )}
+      </div>
+      <p className="mt-2 text-xs text-muted">
+        The first option is the default. Price is added to the base price.
+      </p>
     </div>
   );
 }

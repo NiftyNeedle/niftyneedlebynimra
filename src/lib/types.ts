@@ -22,12 +22,23 @@ export interface ProductImage {
   alt: string;
 }
 
+/** A single choice within a customization dropdown (e.g. a yarn or size).
+ *  `price` is added on top of the product's base price. */
+export interface CustomizationOption {
+  label: string;
+  price: number;
+}
+
 /** Which customization options a product offers to customers.
  *  When a product is customizable but this is absent, all are treated as on. */
 export interface ProductCustomization {
   color?: boolean;
   yarn?: boolean;
+  /** Admin-defined yarn choices; falls back to defaults when empty. */
+  yarnOptions?: CustomizationOption[];
   size?: boolean;
+  /** Admin-defined size choices; falls back to defaults when empty. */
+  sizeOptions?: CustomizationOption[];
   name?: boolean;
   giftMessage?: boolean;
   instructions?: boolean;
