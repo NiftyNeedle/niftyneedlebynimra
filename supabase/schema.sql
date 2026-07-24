@@ -16,6 +16,7 @@ create table if not exists public.products (
   rating            numeric(2,1) not null default 5.0,
   review_count      integer not null default 0,
   swatch            text not null default '',
+  image_url         text,
   colors            text[] not null default '{}',
   materials         text[] not null default '{}',
   short_description text not null default '',

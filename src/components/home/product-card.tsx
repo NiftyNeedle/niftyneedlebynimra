@@ -26,10 +26,20 @@ export function ProductCard({ product }: { product: Product }) {
           aria-label={product.name}
           className="absolute inset-0 block"
         >
-          <div
-            className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
-            style={{ background: product.swatch }}
-          />
+          {product.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
+              style={{ background: product.swatch }}
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-espresso/15 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
         </Link>
 

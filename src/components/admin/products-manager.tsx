@@ -1,0 +1,376 @@
+"use client";
+
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Copy, Pencil, Plus, Trash2, X } from "lucide-react";
+import type { Product } from "@/lib/types";
+import { categories } from "@/lib/data";
+import { formatPrice } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { upsertProduct, deleteProduct, type ActionState } from "@/app/admin/products/actions";
+
+const field =
+  "w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring";
+const label = "mb-1.5 block text-sm font-medium text-foreground";
+
+const editableCategories = categories.filter((c) => c.slug !== "custom-orders");
+
+export function ProductsManager({ products }: { products: Product[] }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [duplicateFrom, setDuplicateFrom] = useState<Product | null>(null);
+  const [isDeleting, startDelete] = useTransition();
+
+  const openAdd = () => {
+    setEditing(null);
+    setDuplicateFrom(null);
+    setShowForm(true);
+  };
+  const openEdit = (p: Product) => {
+    setEditing(p);
+    setDuplicateFrom(null);
+    setShowForm(true);
+  };
+  const openDuplicate = (p: Product) => {
+    setEditing(null);
+    setDuplicateFrom(p);
+    setShowForm(true);
+  };
+
+  const handleDelete = (p: Product) => {
+    if (!confirm(`Delete "${p.name}"? This can't be undone.`)) return;
+    startDelete(async () => {
+      const res = await deleteProduct(p.id);
+      if (res.error) toast(res.error, "info");
+      else {
+        toast(`Deleted ${p.name}`);
+        router.refresh();
+      }
+    });
+  };
+
+  const base = editing ?? duplicateFrom;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl font-semibold text-foreground">
+            Products
+          </h1>
+          <p className="text-sm text-muted">{products.length} products</p>
+        </div>
+        <button
+          onClick={openAdd}
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground"
+        >
+          <Plus className="h-4 w-4" />
+          Add product
+        </button>
+      </div>
+
+      <div className="overflow-x-auto rounded-3xl border border-border bg-surface shadow-[var(--shadow-soft)]">
+        <table className="w-full min-w-[42rem] text-left text-sm">
+          <thead className="border-b border-border text-xs uppercase tracking-wider text-muted">
+            <tr>
+              <th className="px-5 py-4 font-medium">Product</th>
+              <th className="px-5 py-4 font-medium">Category</th>
+              <th className="px-5 py-4 font-medium">Price</th>
+              <th className="px-5 py-4 font-medium">Stock</th>
+              <th className="px-5 py-4 text-right font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((p) => (
+              <tr
+                key={p.id}
+                className="border-b border-border last:border-0 hover:bg-surface-muted/40"
+              >
+                <td className="px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-cover bg-center"
+                      style={
+                        p.imageUrl
+                          ? { backgroundImage: `url(${p.imageUrl})` }
+                          : { background: p.swatch }
+                      }
+                    />
+                    <span className="font-medium text-foreground">{p.name}</span>
+                  </div>
+                </td>
+                <td className="px-5 py-4 capitalize text-muted">
+                  {p.categorySlug.replace(/-/g, " ")}
+                </td>
+                <td className="px-5 py-4 font-medium text-foreground">
+                  {formatPrice(p.salePrice ?? p.price, p.currency)}
+                </td>
+                <td className="px-5 py-4 text-muted">
+                  {p.inStock ? "In stock" : "Out of stock"}
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex justify-end gap-1">
+                    <button
+                      aria-label="Edit"
+                      onClick={() => openEdit(p)}
+                      className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-muted"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      aria-label="Duplicate"
+                      onClick={() => openDuplicate(p)}
+                      className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-muted"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                    <button
+                      aria-label="Delete"
+                      disabled={isDeleting}
+                      onClick={() => handleDelete(p)}
+                      className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface-muted hover:text-accent disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {showForm && (
+        <ProductForm
+          key={editing?.id ?? duplicateFrom?.id ?? "new"}
+          editing={editing}
+          base={base}
+          onClose={() => setShowForm(false)}
+          onSaved={() => {
+            setShowForm(false);
+            router.refresh();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProductForm({
+  editing,
+  base,
+  onClose,
+  onSaved,
+}: {
+  editing: Product | null;
+  base: Product | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const toast = useToast();
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(
+    upsertProduct,
+    {},
+  );
+
+  useEffect(() => {
+    if (state.ok) {
+      toast(editing ? "Product updated" : "Product added");
+      onSaved();
+    } else if (state.error) {
+      toast(state.error, "info");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-espresso/40 p-4 backdrop-blur-sm">
+      <form
+        action={formAction}
+        className="my-8 w-full max-w-2xl rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-lift)] md:p-8"
+      >
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="font-serif text-2xl text-foreground">
+            {editing ? "Edit product" : "Add product"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-muted"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {editing && <input type="hidden" name="id" value={editing.id} />}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label className={label}>Name *</label>
+            <input name="name" required defaultValue={base?.name} className={field} />
+          </div>
+
+          <div>
+            <label className={label}>URL slug (optional)</label>
+            <input
+              name="slug"
+              defaultValue={editing?.slug}
+              placeholder="auto from name"
+              className={field}
+            />
+          </div>
+          <div>
+            <label className={label}>Category</label>
+            <select
+              name="category_slug"
+              defaultValue={base?.categorySlug ?? editableCategories[0].slug}
+              className={field}
+            >
+              {editableCategories.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={label}>Price *</label>
+            <input
+              name="price"
+              type="number"
+              step="0.01"
+              required
+              defaultValue={base?.price}
+              className={field}
+            />
+          </div>
+          <div>
+            <label className={label}>Sale price (optional)</label>
+            <input
+              name="salePrice"
+              type="number"
+              step="0.01"
+              defaultValue={base?.salePrice}
+              className={field}
+            />
+          </div>
+
+          <div>
+            <label className={label}>Currency</label>
+            <input name="currency" defaultValue={base?.currency ?? "USD"} className={field} />
+          </div>
+          <div>
+            <label className={label}>Rating (0–5)</label>
+            <input
+              name="rating"
+              type="number"
+              step="0.1"
+              min="0"
+              max="5"
+              defaultValue={base?.rating ?? 5}
+              className={field}
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className={label}>Short description</label>
+            <textarea
+              name="short_description"
+              rows={2}
+              defaultValue={base?.shortDescription}
+              className={field}
+            />
+          </div>
+
+          <div>
+            <label className={label}>Colours (comma-separated)</label>
+            <input
+              name="colors"
+              defaultValue={base?.colors.join(", ")}
+              placeholder="Blush, Ivory, Sage"
+              className={field}
+            />
+          </div>
+          <div>
+            <label className={label}>Materials (comma-separated)</label>
+            <input
+              name="materials"
+              defaultValue={base?.materials.join(", ")}
+              placeholder="Cotton yarn"
+              className={field}
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className={label}>Product photo</label>
+            {base?.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={base.imageUrl}
+                alt=""
+                className="mb-2 h-24 w-24 rounded-xl object-cover"
+              />
+            )}
+            <input
+              name="image"
+              type="file"
+              accept="image/*"
+              className="block w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground"
+            />
+            <p className="mt-1 text-xs text-muted">
+              {editing
+                ? "Leave empty to keep the current photo."
+                : "Optional — a colour swatch is used if no photo is added."}
+            </p>
+          </div>
+
+          <input
+            type="hidden"
+            name="swatch"
+            defaultValue={base?.swatch ?? ""}
+          />
+
+          <div className="sm:col-span-2 grid grid-cols-2 gap-3 rounded-2xl bg-surface-muted/50 p-4 sm:grid-cols-4">
+            {[
+              { name: "in_stock", label: "In stock", checked: base ? base.inStock : true },
+              { name: "customizable", label: "Customizable", checked: base?.customizable },
+              { name: "is_best_seller", label: "Best seller", checked: base?.isBestSeller },
+              { name: "is_new", label: "New arrival", checked: base?.isNew },
+            ].map((t) => (
+              <label key={t.name} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name={t.name}
+                  defaultChecked={t.checked}
+                  className="h-4 w-4 accent-[var(--color-primary)]"
+                />
+                {t.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full px-5 py-2.5 text-sm font-medium text-muted hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 disabled:opacity-60"
+          >
+            {pending ? "Saving…" : editing ? "Save changes" : "Add product"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

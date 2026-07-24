@@ -71,6 +71,7 @@ export function ProductDetail({
     return d;
   }, [size, yarn, name, giftMessage]);
 
+  const hasPhoto = Boolean(product.imageUrl);
   const gallery = [product.swatch, product.swatch, product.swatch, product.swatch];
 
   const handleAdd = () => {
@@ -98,8 +99,16 @@ export function ProductDetail({
             initial={{ opacity: 0.4, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             className="group relative aspect-square overflow-hidden rounded-[2rem] border border-border"
-            style={{ background: gallery[activeImg] }}
+            style={hasPhoto ? undefined : { background: gallery[activeImg] }}
           >
+            {hasPhoto && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-espresso/10 to-transparent" />
             {product.isNew && (
               <span className="absolute left-5 top-5 rounded-full bg-sage-deep px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
@@ -107,22 +116,24 @@ export function ProductDetail({
               </span>
             )}
           </motion.div>
-          <div className="mt-4 grid grid-cols-4 gap-3">
-            {gallery.map((g, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveImg(i)}
-                aria-label={`View image ${i + 1}`}
-                className={cn(
-                  "aspect-square overflow-hidden rounded-2xl border-2 transition-all",
-                  activeImg === i
-                    ? "border-primary"
-                    : "border-transparent opacity-70 hover:opacity-100",
-                )}
-                style={{ background: g }}
-              />
-            ))}
-          </div>
+          {!hasPhoto && (
+            <div className="mt-4 grid grid-cols-4 gap-3">
+              {gallery.map((g, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveImg(i)}
+                  aria-label={`View image ${i + 1}`}
+                  className={cn(
+                    "aspect-square overflow-hidden rounded-2xl border-2 transition-all",
+                    activeImg === i
+                      ? "border-primary"
+                      : "border-transparent opacity-70 hover:opacity-100",
+                  )}
+                  style={{ background: g }}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Info + customization */}

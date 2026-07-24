@@ -27,6 +27,7 @@ interface ProductRow {
   rating: number;
   review_count: number;
   swatch: string;
+  image_url: string | null;
   colors: string[];
   materials: string[];
   short_description: string;
@@ -47,7 +48,8 @@ function mapRow(r: ProductRow): Product {
     currency: r.currency as Product["currency"],
     rating: Number(r.rating),
     reviewCount: r.review_count,
-    images: [{ url: "", alt: r.name }],
+    images: [{ url: r.image_url ?? "", alt: r.name }],
+    imageUrl: r.image_url ?? undefined,
     swatch: r.swatch,
     colors: r.colors ?? [],
     materials: r.materials ?? [],

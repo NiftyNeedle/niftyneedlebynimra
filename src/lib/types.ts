@@ -34,6 +34,8 @@ export interface Product {
   rating: number;
   reviewCount: number;
   images: ProductImage[];
+  /** Real product photo (Supabase Storage URL). Falls back to `swatch`. */
+  imageUrl?: string;
   /** Placeholder gradient used until real imagery is uploaded to Storage. */
   swatch: string;
   colors: string[];

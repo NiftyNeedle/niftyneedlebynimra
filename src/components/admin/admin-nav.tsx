@@ -11,8 +11,10 @@ import {
   Tag,
   Users,
 } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
+import { logout } from "@/app/admin/login/actions";
 
 const links = [
   { href: "/admin", label: "Dashboard", Icon: LayoutDashboard },
@@ -55,13 +57,22 @@ export function AdminNav() {
           );
         })}
       </nav>
-      <div className="p-4">
+      <div className="space-y-1 p-4">
         <Link
           href="/"
           className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-warm-white/70 transition-colors hover:bg-warm-white/10 hover:text-warm-white"
         >
           ← Back to store
         </Link>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-warm-white/70 transition-colors hover:bg-warm-white/10 hover:text-warm-white"
+          >
+            <LogOut className="h-4.5 w-4.5" />
+            Sign out
+          </button>
+        </form>
       </div>
     </div>
   );
