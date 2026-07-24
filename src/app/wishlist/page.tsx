@@ -2,13 +2,17 @@ import type { Metadata } from "next";
 import { Share2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { WishlistGrid } from "@/components/account/wishlist-grid";
+import { getProducts } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "Wishlist",
   description: "Your saved handmade crochet treasures.",
 };
 
-export default function WishlistPage() {
+export const revalidate = 60;
+
+export default async function WishlistPage() {
+  const products = await getProducts();
   return (
     <>
       <PageHeader
@@ -24,7 +28,7 @@ export default function WishlistPage() {
             Share wishlist
           </button>
         </div>
-        <WishlistGrid />
+        <WishlistGrid products={products} />
       </div>
     </>
   );

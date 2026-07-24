@@ -1,10 +1,11 @@
-import { bestSellers } from "@/lib/data";
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { ButtonLink } from "@/components/ui/button";
+import { getBestSellers } from "@/lib/catalog";
 import { ProductCard } from "./product-card";
 
-export function BestSellers() {
+export async function BestSellers() {
+  const bestSellers = await getBestSellers(4);
   return (
     <section className="bg-surface-muted py-24">
       <div className="section-px mx-auto max-w-[90rem]">

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/page-header";
 import { ShopClient } from "@/components/shop/shop-client";
+import { getProducts } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -9,7 +10,11 @@ export const metadata: Metadata = {
     "Browse handmade crochet flowers, bouquets, plushies, gifts, and home décor. Filter by category, colour, and price.",
 };
 
-export default function ShopPage() {
+// Re-check the database at most once a minute.
+export const revalidate = 60;
+
+export default async function ShopPage() {
+  const products = await getProducts();
   return (
     <>
       <PageHeader
@@ -19,7 +24,7 @@ export default function ShopPage() {
         crumbs={[{ label: "Shop" }]}
       />
       <Suspense fallback={<div className="py-24 text-center text-muted">Loading…</div>}>
-        <ShopClient />
+        <ShopClient products={products} />
       </Suspense>
     </>
   );

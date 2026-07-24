@@ -8,6 +8,8 @@ import { CustomCta } from "@/components/home/custom-cta";
 import { Testimonials } from "@/components/home/testimonials";
 import { Newsletter } from "@/components/home/newsletter";
 
+export const revalidate = 60;
+
 export default function Home() {
   return (
     <>

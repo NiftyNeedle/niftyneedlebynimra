@@ -2,17 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { notFound } from "next/navigation";
-import {
-  getProductBySlug,
-  getRelatedProducts,
-  products,
-} from "@/lib/data";
+import { getProductBySlug, getRelatedProducts } from "@/lib/catalog";
 import { getReviewsForProduct } from "@/lib/reviews";
 import { ProductDetail } from "@/components/product/product-detail";
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
-}
+// Re-check the database at most once a minute; render new products on demand.
+export const revalidate = 60;
+export const dynamicParams = true;
 
 export async function generateMetadata({
   params,
@@ -20,7 +16,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) return { title: "Product not found" };
   return {
     title: product.name,
@@ -38,11 +34,11 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
   const reviews = getReviewsForProduct(product.id);
-  const related = getRelatedProducts(product);
+  const related = await getRelatedProducts(product);
 
   return (
     <>

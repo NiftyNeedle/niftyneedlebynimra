@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { products, categories, allColors } from "@/lib/data";
+import { categories } from "@/lib/data";
+import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/home/product-card";
 import { cn } from "@/lib/utils";
 
@@ -18,9 +19,13 @@ const sortOptions: { value: SortKey; label: string }[] = [
   { value: "rating", label: "Top Rated" },
 ];
 
-export function ShopClient() {
+export function ShopClient({ products }: { products: Product[] }) {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") ?? "all";
+  const allColors = useMemo(
+    () => Array.from(new Set(products.flatMap((p) => p.colors))).sort(),
+    [products],
+  );
 
   const [category, setCategory] = useState(initialCategory);
   const [query, setQuery] = useState("");
@@ -68,7 +73,7 @@ export function ShopClient() {
         );
     }
     return list;
-  }, [category, query, maxPrice, colors, inStockOnly, customizableOnly, sort]);
+  }, [products, category, query, maxPrice, colors, inStockOnly, customizableOnly, sort]);
 
   const toggleColor = (c: string) =>
     setColors((prev) =>
