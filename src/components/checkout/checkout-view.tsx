@@ -2,28 +2,26 @@
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { CreditCard, Check, Lock, ShieldCheck } from "lucide-react";
+import { CreditCard, Lock, ShieldCheck } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { formatPrice } from "@/lib/utils";
 import { ButtonLink } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { placeOrder, type PlaceOrderState } from "@/app/checkout/actions";
+import { startCheckout, type CheckoutState } from "@/app/checkout/actions";
 
 const FREE_SHIP = 75;
 
 const field =
   "w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring";
 
-export function CheckoutView() {
-  const { cart, cartSubtotal, clearCart } = useStore();
+export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
+  const { cart, cartSubtotal } = useStore();
   const toast = useToast();
   const [shippingMethod, setShippingMethod] = useState("standard");
-  const [state, formAction, pending] = useActionState<PlaceOrderState, FormData>(
-    placeOrder,
+  const [state, formAction, pending] = useActionState<CheckoutState, FormData>(
+    startCheckout,
     {},
   );
-  const [placedNumber, setPlacedNumber] = useState<string | null>(null);
 
   const shipping =
     cartSubtotal >= FREE_SHIP ? 0 : shippingMethod === "express" ? 16 : 6;
@@ -31,48 +29,8 @@ export function CheckoutView() {
   const total = cartSubtotal + shipping + tax;
 
   useEffect(() => {
-    if (state.ok && state.orderNumber) {
-      setPlacedNumber(state.orderNumber);
-      clearCart();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (state.error) {
-      toast(state.error, "info");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
-
-  if (placedNumber) {
-    return (
-      <div className="section-px mx-auto flex max-w-2xl flex-col items-center justify-center gap-5 py-32 text-center">
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 15 }}
-          className="grid h-24 w-24 place-items-center rounded-full bg-sage-deep text-white"
-        >
-          <Check className="h-12 w-12" />
-        </motion.span>
-        <h1 className="font-serif text-4xl font-semibold text-foreground">
-          Thank you for your order!
-        </h1>
-        <p className="max-w-md text-muted">
-          Your order is saved and I&apos;ll begin handcrafting it right away.
-          Keep your order number to track its progress.
-        </p>
-        <p className="rounded-full bg-surface-muted px-5 py-2 text-sm">
-          Order <span className="font-semibold">{placedNumber}</span>
-        </p>
-        <div className="mt-4 flex gap-3">
-          <ButtonLink href={`/track?order=${placedNumber}`}>
-            Track your order
-          </ButtonLink>
-          <ButtonLink href="/shop" variant="outline">
-            Continue shopping
-          </ButtonLink>
-        </div>
-      </div>
-    );
-  }
+    if (state.error) toast(state.error, "info");
+  }, [state, toast]);
 
   if (cart.length === 0) {
     return (
@@ -95,11 +53,9 @@ export function CheckoutView() {
       </h1>
 
       <form action={formAction} className="grid gap-10 lg:grid-cols-[1fr_22rem]">
-        {/* Cart snapshot for the server action */}
         <input type="hidden" name="items" value={JSON.stringify(cart)} />
 
         <div className="space-y-10">
-          {/* Contact */}
           <section>
             <h2 className="mb-4 font-serif text-2xl text-foreground">Contact</h2>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -116,7 +72,6 @@ export function CheckoutView() {
             </div>
           </section>
 
-          {/* Shipping */}
           <section>
             <h2 className="mb-4 font-serif text-2xl text-foreground">
               Shipping address
@@ -135,7 +90,6 @@ export function CheckoutView() {
             </div>
           </section>
 
-          {/* Shipping method */}
           <section>
             <h2 className="mb-4 font-serif text-2xl text-foreground">
               Shipping method
@@ -177,7 +131,6 @@ export function CheckoutView() {
             </div>
           </section>
 
-          {/* Payment */}
           <section>
             <h2 className="mb-4 flex items-center gap-2 font-serif text-2xl text-foreground">
               Payment
@@ -185,22 +138,19 @@ export function CheckoutView() {
                 <Lock className="h-3 w-3" /> Secure
               </span>
             </h2>
-            <div className="rounded-2xl border border-border p-5">
-              <div className="mb-4 flex items-center gap-2 text-sm text-muted">
-                <CreditCard className="h-4 w-4" />
-                Card · Apple Pay · Google Pay (via Stripe)
-              </div>
-              <div className="grid gap-4">
-                <input placeholder="Card number" className={field} />
-                <div className="grid grid-cols-2 gap-4">
-                  <input placeholder="MM / YY" className={field} />
-                  <input placeholder="CVC" className={field} />
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-muted">
-                Card payment isn&apos;t live yet — your order is placed and saved,
-                and payment is arranged directly. Stripe wires in here later.
-              </p>
+            <div className="rounded-2xl border border-border p-5 text-sm text-muted">
+              {stripeEnabled ? (
+                <p className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  You&apos;ll be taken to Stripe&apos;s secure page to pay by card,
+                  Apple Pay, or Google Pay.
+                </p>
+              ) : (
+                <p>
+                  Online card payment isn&apos;t enabled yet — your order is placed
+                  and saved, and payment is arranged directly.
+                </p>
+              )}
             </div>
           </section>
         </div>
@@ -224,9 +174,7 @@ export function CheckoutView() {
                       {item.quantity}
                     </span>
                   </div>
-                  <span className="flex-1 text-sm text-foreground">
-                    {item.name}
-                  </span>
+                  <span className="flex-1 text-sm text-foreground">{item.name}</span>
                   <span className="text-sm font-medium">
                     {formatPrice(item.price * item.quantity)}
                   </span>
@@ -263,7 +211,11 @@ export function CheckoutView() {
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] disabled:opacity-60"
             >
               <Lock className="h-4 w-4" />
-              {pending ? "Placing order…" : `Place order · ${formatPrice(total)}`}
+              {pending
+                ? "Processing…"
+                : stripeEnabled
+                  ? `Continue to payment · ${formatPrice(total)}`
+                  : `Place order · ${formatPrice(total)}`}
             </button>
             <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted">
               <ShieldCheck className="h-3.5 w-3.5" />

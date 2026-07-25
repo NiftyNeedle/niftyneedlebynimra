@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CheckoutView } from "@/components/checkout/checkout-view";
+import { isStripeConfigured } from "@/lib/stripe";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function CheckoutPage() {
-  return <CheckoutView />;
+  return <CheckoutView stripeEnabled={isStripeConfigured} />;
 }

@@ -180,6 +180,9 @@ export function OrdersTable({ orders }: { orders: AdminOrder[] }) {
                         onChange={(e) => changeStatus(o.id, e.target.value)}
                         className="rounded-full border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
                       >
+                        {(orderStages as readonly string[]).includes(o.status)
+                          ? null
+                          : <option key={o.status}>{o.status}</option>}
                         {orderStages.map((s) => (
                           <option key={s}>{s}</option>
                         ))}
