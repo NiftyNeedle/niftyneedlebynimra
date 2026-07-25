@@ -4,9 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Minus, Plus, Tag, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { formatPrice } from "@/lib/utils";
 import { ButtonLink } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { useCurrency } from "@/components/currency/currency-provider";
 
 const COUPONS: Record<string, number> = { WELCOME10: 0.1, LOVE15: 0.15 };
 const FREE_SHIP = 75;
@@ -15,6 +15,7 @@ const SHIP_COST = 6;
 export function CartView() {
   const { cart, updateQuantity, removeFromCart, cartSubtotal } = useStore();
   const toast = useToast();
+  const { format } = useCurrency();
   const [code, setCode] = useState("");
   const [discount, setDiscount] = useState(0);
 
@@ -115,7 +116,7 @@ export function CartView() {
                     </button>
                   </div>
                   <span className="font-serif text-xl font-semibold text-foreground">
-                    {formatPrice(item.price * item.quantity)}
+                    {format(item.price * item.quantity)}
                   </span>
                 </div>
               </div>
@@ -161,30 +162,30 @@ export function CartView() {
             <dl className="mt-6 space-y-3 border-t border-border pt-6 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted">Subtotal</dt>
-                <dd className="font-medium">{formatPrice(cartSubtotal)}</dd>
+                <dd className="font-medium">{format(cartSubtotal)}</dd>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-sage-deep">
                   <dt>Discount</dt>
-                  <dd>−{formatPrice(discountAmount)}</dd>
+                  <dd>−{format(discountAmount)}</dd>
                 </div>
               )}
               <div className="flex justify-between">
                 <dt className="text-muted">Shipping</dt>
                 <dd className="font-medium">
-                  {shipping === 0 ? "Free" : formatPrice(shipping)}
+                  {shipping === 0 ? "Free" : format(shipping)}
                 </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Estimated tax</dt>
-                <dd className="font-medium">{formatPrice(tax)}</dd>
+                <dd className="font-medium">{format(tax)}</dd>
               </div>
             </dl>
 
             <div className="mt-6 flex items-center justify-between border-t border-border pt-6">
               <span className="font-serif text-xl text-foreground">Total</span>
               <span className="font-serif text-2xl font-semibold text-foreground">
-                {formatPrice(total)}
+                {format(total)}
               </span>
             </div>
 

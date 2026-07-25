@@ -9,6 +9,7 @@ import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { CurrencySwitcher } from "@/components/currency/currency-switcher";
 import { ButtonLink } from "@/components/ui/button";
 
 const primaryLinks = [
@@ -116,6 +117,7 @@ export function Navbar() {
 
         {/* Actions */}
         <div className="flex items-center gap-1.5">
+          <CurrencySwitcher className="hidden sm:inline-flex" />
           <ThemeToggle className="hidden sm:grid" />
           <Link
             href="/wishlist"
@@ -215,6 +217,7 @@ export function Navbar() {
                     <Heart className="h-5 w-5" />
                   </Link>
                   <ThemeToggle />
+                  <CurrencySwitcher />
                 </div>
                 <ButtonLink
                   href="/shop"

@@ -15,9 +15,10 @@ import {
 import { type Product, ALL_CUSTOMIZATION } from "@/lib/types";
 import type { Review } from "@/lib/reviews";
 import { DEFAULT_YARN_OPTIONS, DEFAULT_SIZE_OPTIONS } from "@/lib/customization";
-import { formatPrice, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/components/ui/toast";
+import { useCurrency } from "@/components/currency/currency-provider";
 import { ProductCard } from "@/components/home/product-card";
 import { ReviewsSection } from "./reviews-section";
 
@@ -34,6 +35,7 @@ export function ProductDetail({
 }) {
   const { addToCart, toggleWishlist, isWishlisted } = useStore();
   const toast = useToast();
+  const { format } = useCurrency();
   const wishlisted = isWishlisted(product.id);
 
   // Which options this product offers (all-on if customizable with none set).
@@ -171,11 +173,11 @@ export function ProductDetail({
 
           <div className="mt-5 flex items-baseline gap-3">
             <span className="font-serif text-3xl font-semibold text-foreground">
-              {formatPrice(unitPrice, product.currency)}
+              {format(unitPrice, product.currency)}
             </span>
             {product.salePrice && (
               <span className="text-lg text-muted line-through">
-                {formatPrice(product.price, product.currency)}
+                {format(product.price, product.currency)}
               </span>
             )}
             <span
@@ -213,7 +215,7 @@ export function ProductDetail({
                         )}
                       >
                         {c.label}
-                        {c.price ? ` (+${formatPrice(c.price)})` : ""}
+                        {c.price ? ` (+${format(c.price)})` : ""}
                       </button>
                     ))}
                   </div>
@@ -235,7 +237,7 @@ export function ProductDetail({
                         {yarnTypes.map((y) => (
                           <option key={y.label} value={y.label}>
                             {y.label}
-                            {y.price ? ` (+${formatPrice(y.price)})` : ""}
+                            {y.price ? ` (+${format(y.price)})` : ""}
                           </option>
                         ))}
                       </select>
@@ -252,7 +254,7 @@ export function ProductDetail({
                         {sizes.map((s) => (
                           <option key={s.label} value={s.label}>
                             {s.label}
-                            {s.price ? ` (+${formatPrice(s.price)})` : ""}
+                            {s.price ? ` (+${format(s.price)})` : ""}
                           </option>
                         ))}
                       </select>
@@ -341,7 +343,7 @@ export function ProductDetail({
               className="group flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]"
             >
               <ShoppingBag className="h-5 w-5" />
-              Add to cart · {formatPrice(unitPrice * quantity, product.currency)}
+              Add to cart · {format(unitPrice * quantity, product.currency)}
             </button>
 
             <button

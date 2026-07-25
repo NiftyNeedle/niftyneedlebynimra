@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
+import { cookies, headers } from "next/headers";
 import "./globals.css";
 import { ThemeProvider, themeScript } from "@/lib/theme";
 import { StoreProvider } from "@/lib/store";
 import { ToastProvider } from "@/components/ui/toast";
 import { SiteChrome } from "@/components/layout/site-chrome";
+import { CurrencyProvider } from "@/components/currency/currency-provider";
+import { getRates, currencyForCountry, isCurrency } from "@/lib/currency";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -53,11 +56,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [rates, cookieStore, headerList] = await Promise.all([
+    getRates(),
+    cookies(),
+    headers(),
+  ]);
+  const savedCurrency = cookieStore.get("nn_currency")?.value;
+  const initialCurrency = isCurrency(savedCurrency)
+    ? savedCurrency
+    : currencyForCountry(headerList.get("x-vercel-ip-country"));
+
   return (
     <html
       lang="en"
@@ -72,11 +85,13 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-background text-foreground"
       >
         <ThemeProvider>
-          <StoreProvider>
-            <ToastProvider>
-              <SiteChrome>{children}</SiteChrome>
-            </ToastProvider>
-          </StoreProvider>
+          <CurrencyProvider initialCurrency={initialCurrency} rates={rates}>
+            <StoreProvider>
+              <ToastProvider>
+                <SiteChrome>{children}</SiteChrome>
+              </ToastProvider>
+            </StoreProvider>
+          </CurrencyProvider>
         </ThemeProvider>
       </body>
     </html>

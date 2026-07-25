@@ -4,9 +4,9 @@ import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { CreditCard, Lock, ShieldCheck } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { formatPrice } from "@/lib/utils";
 import { ButtonLink } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { useCurrency } from "@/components/currency/currency-provider";
 import { startCheckout, type CheckoutState } from "@/app/checkout/actions";
 
 const FREE_SHIP = 75;
@@ -17,6 +17,7 @@ const field =
 export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
   const { cart, cartSubtotal } = useStore();
   const toast = useToast();
+  const { format, currency } = useCurrency();
   const [shippingMethod, setShippingMethod] = useState("standard");
   const [state, formAction, pending] = useActionState<CheckoutState, FormData>(
     startCheckout,
@@ -124,7 +125,7 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
                     </span>
                   </span>
                   <span className="font-medium">
-                    {m.cost === 0 ? "Free" : formatPrice(m.cost)}
+                    {m.cost === 0 ? "Free" : format(m.cost)}
                   </span>
                 </label>
               ))}
@@ -176,7 +177,7 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
                   </div>
                   <span className="flex-1 text-sm text-foreground">{item.name}</span>
                   <span className="text-sm font-medium">
-                    {formatPrice(item.price * item.quantity)}
+                    {format(item.price * item.quantity)}
                   </span>
                 </div>
               ))}
@@ -185,23 +186,23 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
             <dl className="mt-6 space-y-3 border-t border-border pt-6 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted">Subtotal</dt>
-                <dd className="font-medium">{formatPrice(cartSubtotal)}</dd>
+                <dd className="font-medium">{format(cartSubtotal)}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Shipping</dt>
                 <dd className="font-medium">
-                  {shipping === 0 ? "Free" : formatPrice(shipping)}
+                  {shipping === 0 ? "Free" : format(shipping)}
                 </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Tax</dt>
-                <dd className="font-medium">{formatPrice(tax)}</dd>
+                <dd className="font-medium">{format(tax)}</dd>
               </div>
             </dl>
             <div className="mt-6 flex items-center justify-between border-t border-border pt-6">
               <span className="font-serif text-xl text-foreground">Total</span>
               <span className="font-serif text-2xl font-semibold text-foreground">
-                {formatPrice(total)}
+                {format(total)}
               </span>
             </div>
 
@@ -214,9 +215,14 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
               {pending
                 ? "Processing…"
                 : stripeEnabled
-                  ? `Continue to payment · ${formatPrice(total)}`
-                  : `Place order · ${formatPrice(total)}`}
+                  ? `Continue to payment · ${format(total)}`
+                  : `Place order · ${format(total)}`}
             </button>
+            {currency !== "USD" && (
+              <p className="mt-3 text-center text-xs text-muted">
+                Prices are shown in {currency}; payment is processed in USD.
+              </p>
+            )}
             <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted">
               <ShieldCheck className="h-3.5 w-3.5" />
               Secure &amp; saved. You can also{" "}

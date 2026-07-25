@@ -4,14 +4,16 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Eye, Heart, ShoppingBag, Star } from "lucide-react";
 import type { Product } from "@/lib/types";
-import { formatPrice, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/components/ui/toast";
+import { useCurrency } from "@/components/currency/currency-provider";
 
 export function ProductCard({ product }: { product: Product }) {
   const hasSale = typeof product.salePrice === "number";
   const { addToCart, toggleWishlist, isWishlisted } = useStore();
   const toast = useToast();
+  const { format } = useCurrency();
   const wishlisted = isWishlisted(product.id);
 
   return (
@@ -107,11 +109,11 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="mt-4 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-semibold text-foreground">
-              {formatPrice(hasSale ? product.salePrice! : product.price, product.currency)}
+              {format(hasSale ? product.salePrice! : product.price, product.currency)}
             </span>
             {hasSale && (
               <span className="text-sm text-muted line-through">
-                {formatPrice(product.price, product.currency)}
+                {format(product.price, product.currency)}
               </span>
             )}
           </div>

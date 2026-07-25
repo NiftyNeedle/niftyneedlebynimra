@@ -4,8 +4,8 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { formatPrice } from "@/lib/utils";
 import { ButtonLink } from "@/components/ui/button";
+import { useCurrency } from "@/components/currency/currency-provider";
 
 const FREE_SHIP_THRESHOLD = 75;
 
@@ -19,6 +19,7 @@ export function CartDrawer() {
     cartSubtotal,
     cartCount,
   } = useStore();
+  const { format } = useCurrency();
 
   const remaining = Math.max(0, FREE_SHIP_THRESHOLD - cartSubtotal);
   const progress = Math.min(100, (cartSubtotal / FREE_SHIP_THRESHOLD) * 100);
@@ -82,7 +83,7 @@ export function CartDrawer() {
                       <>
                         You&apos;re{" "}
                         <span className="font-semibold text-foreground">
-                          {formatPrice(remaining)}
+                          {format(remaining)}
                         </span>{" "}
                         away from free shipping!
                       </>
@@ -158,7 +159,7 @@ export function CartDrawer() {
                             </button>
                           </div>
                           <span className="font-semibold text-foreground">
-                            {formatPrice(item.price * item.quantity)}
+                            {format(item.price * item.quantity)}
                           </span>
                         </div>
                       </div>
@@ -170,7 +171,7 @@ export function CartDrawer() {
                   <div className="mb-4 flex items-center justify-between">
                     <span className="text-muted">Subtotal</span>
                     <span className="font-serif text-2xl font-semibold text-foreground">
-                      {formatPrice(cartSubtotal)}
+                      {format(cartSubtotal)}
                     </span>
                   </div>
                   <p className="mb-4 text-xs text-muted">
