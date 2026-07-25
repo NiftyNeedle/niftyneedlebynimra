@@ -1,7 +1,6 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { notifyNewCustomOrder } from "@/lib/email";
 
 export interface CustomOrderState {
@@ -61,22 +60,11 @@ export async function submitCustomOrder(
     const quantityRaw = String(formData.get("quantity") ?? "").trim();
     const quantity = quantityRaw ? parseInt(quantityRaw, 10) || null : null;
 
-    // Attach to the logged-in customer, if any.
-    let userId: string | null = null;
-    try {
-      const supabase = await createClient();
-      const { data: auth } = await supabase.auth.getUser();
-      userId = auth.user?.id ?? null;
-    } catch {
-      userId = null;
-    }
-
     const title = str(formData.get("title"));
     const productType = str(formData.get("product_type"));
 
     const { error } = await admin.from("custom_orders").insert({
       status: "New",
-      user_id: userId,
       title,
       product_type: productType,
       occasion: str(formData.get("occasion")),
