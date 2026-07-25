@@ -98,6 +98,8 @@ export async function upsertProduct(
                   }))
                   .filter((o) => o.label)
               : [];
+          if (parsed.colorOptions)
+            parsed.colorOptions = sanitizeOptions(parsed.colorOptions);
           if (parsed.yarnOptions)
             parsed.yarnOptions = sanitizeOptions(parsed.yarnOptions);
           if (parsed.sizeOptions)
@@ -109,6 +111,16 @@ export async function upsertProduct(
       }
     }
 
+    // Colours come from the customization colour options (labels drive the
+    // shop filter). Rating/review_count are dynamic — never set here.
+    const colorLabels = Array.isArray(
+      (customization as { colorOptions?: { label: string }[] } | null)?.colorOptions,
+    )
+      ? (customization as { colorOptions: { label: string }[] }).colorOptions.map(
+          (o) => o.label,
+        )
+      : [];
+
     const row: Record<string, unknown> = {
       slug,
       name,
@@ -116,13 +128,11 @@ export async function upsertProduct(
       price,
       sale_price,
       currency: String(formData.get("currency") ?? "USD"),
-      rating: toNum(formData.get("rating")) ?? 5,
-      review_count: parseInt(String(formData.get("review_count") ?? "0"), 10) || 0,
       short_description: String(formData.get("short_description") ?? ""),
       swatch:
         String(formData.get("swatch") ?? "").trim() ||
         "linear-gradient(135deg,#dde4ee,#8fa57e)",
-      colors: parseList(formData.get("colors")),
+      colors: colorLabels,
       materials: parseList(formData.get("materials")),
       is_best_seller: formData.get("is_best_seller") === "on",
       is_new: formData.get("is_new") === "on",

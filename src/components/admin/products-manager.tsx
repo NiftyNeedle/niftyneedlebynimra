@@ -196,6 +196,11 @@ function ProductForm({
     giftMessage: Boolean(czDefaults.giftMessage),
     instructions: Boolean(czDefaults.instructions),
   });
+  const [colorOptions, setColorOptions] = useState<CustomizationOption[]>(
+    base?.customization?.colorOptions?.length
+      ? base.customization.colorOptions
+      : (base?.colors ?? []).map((c) => ({ label: c, price: 0 })),
+  );
   const [yarnOptions, setYarnOptions] = useState<CustomizationOption[]>(
     base?.customization?.yarnOptions?.length
       ? base.customization.yarnOptions
@@ -213,6 +218,7 @@ function ProductForm({
   const builtCustomization: ProductCustomization | null = customizable
     ? {
         color: cz.color,
+        ...(cz.color ? { colorOptions } : {}),
         yarn: cz.yarn,
         ...(cz.yarn ? { yarnOptions } : {}),
         size: cz.size,
@@ -242,7 +248,7 @@ function ProductForm({
     <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overflow-x-hidden bg-espresso/40 p-3 backdrop-blur-sm sm:p-4">
       <form
         action={formAction}
-        className="my-6 w-full max-w-2xl overflow-hidden rounded-3xl border border-border bg-surface p-5 shadow-[var(--shadow-lift)] sm:my-8 md:p-8"
+        className="my-6 max-h-[92vh] w-full max-w-2xl overflow-y-auto overflow-x-hidden rounded-3xl border border-border bg-surface p-5 shadow-[var(--shadow-lift)] sm:my-8 md:p-8"
       >
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-serif text-2xl text-foreground">
@@ -316,18 +322,6 @@ function ProductForm({
             <label className={label}>Currency</label>
             <input name="currency" defaultValue={base?.currency ?? "USD"} className={field} />
           </div>
-          <div>
-            <label className={label}>Rating (0–5)</label>
-            <input
-              name="rating"
-              type="number"
-              step="0.1"
-              min="0"
-              max="5"
-              defaultValue={base?.rating ?? 5}
-              className={field}
-            />
-          </div>
 
           <div className="sm:col-span-2">
             <label className={label}>Short description</label>
@@ -339,16 +333,7 @@ function ProductForm({
             />
           </div>
 
-          <div>
-            <label className={label}>Colours (comma-separated)</label>
-            <input
-              name="colors"
-              defaultValue={base?.colors.join(", ")}
-              placeholder="Blush, Ivory, Sage"
-              className={field}
-            />
-          </div>
-          <div>
+          <div className="sm:col-span-2">
             <label className={label}>Materials (comma-separated)</label>
             <input
               name="materials"
@@ -434,8 +419,8 @@ function ProductForm({
                   Customization options shown to customers
                 </p>
                 <p className="mt-0.5 text-xs text-muted">
-                  Tick what this product should offer. “Choose colour” uses the
-                  colours listed above.
+                  Tick what this product should offer, then list the choices for
+                  each (with an optional extra price).
                 </p>
               </div>
 
@@ -462,6 +447,13 @@ function ProductForm({
                 ))}
               </div>
 
+              {cz.color && (
+                <OptionListEditor
+                  title="Colour choices"
+                  options={colorOptions}
+                  setOptions={setColorOptions}
+                />
+              )}
               {cz.yarn && (
                 <OptionListEditor
                   title="Yarn choices"

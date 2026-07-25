@@ -37,7 +37,7 @@ export default async function ProductPage({
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const reviews = getReviewsForProduct(product.id);
+  const reviews = await getReviewsForProduct(product.id);
   const related = await getRelatedProducts(product);
 
   return (

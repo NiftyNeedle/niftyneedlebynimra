@@ -33,6 +33,8 @@ export interface CustomizationOption {
  *  When a product is customizable but this is absent, all are treated as on. */
 export interface ProductCustomization {
   color?: boolean;
+  /** Admin-defined colour choices; falls back to `product.colors`. */
+  colorOptions?: CustomizationOption[];
   yarn?: boolean;
   /** Admin-defined yarn choices; falls back to defaults when empty. */
   yarnOptions?: CustomizationOption[];

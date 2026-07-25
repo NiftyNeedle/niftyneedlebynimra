@@ -19,6 +19,7 @@ import { formatPrice, cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/components/ui/toast";
 import { ProductCard } from "@/components/home/product-card";
+import { ReviewsSection } from "./reviews-section";
 
 const tabs = ["Description", "Materials", "Care", "Shipping"] as const;
 
@@ -40,7 +41,11 @@ export function ProductDetail({
     ? product.customization ?? ALL_CUSTOMIZATION
     : null;
 
-  // Per-product yarn/size choices, falling back to defaults.
+  // Per-product colour/yarn/size choices, falling back to defaults.
+  const colorTypes =
+    cz?.colorOptions && cz.colorOptions.length
+      ? cz.colorOptions
+      : product.colors.map((c) => ({ label: c, price: 0 }));
   const yarnTypes =
     cz?.yarnOptions && cz.yarnOptions.length
       ? cz.yarnOptions
@@ -50,7 +55,7 @@ export function ProductDetail({
       ? cz.sizeOptions
       : DEFAULT_SIZE_OPTIONS;
 
-  const [color, setColor] = useState(product.colors[0]);
+  const [color, setColor] = useState(colorTypes[0]?.label ?? "");
   const [yarn, setYarn] = useState(yarnTypes[0]?.label ?? "");
   const [size, setSize] = useState(sizes[0]?.label ?? "");
   const [name, setName] = useState("");
@@ -61,12 +66,13 @@ export function ProductDetail({
   const [tab, setTab] = useState<(typeof tabs)[number]>("Description");
 
   const base = product.salePrice ?? product.price;
+  const colorAdd = cz?.color ? colorTypes.find((c) => c.label === color)?.price ?? 0 : 0;
   const yarnAdd = cz?.yarn ? yarnTypes.find((y) => y.label === yarn)?.price ?? 0 : 0;
   const sizeAdd = cz?.size ? sizes.find((s) => s.label === size)?.price ?? 0 : 0;
 
   const unitPrice = useMemo(
-    () => base + yarnAdd + sizeAdd,
-    [base, yarnAdd, sizeAdd],
+    () => base + colorAdd + yarnAdd + sizeAdd,
+    [base, colorAdd, yarnAdd, sizeAdd],
   );
 
   const productionDays = useMemo(() => {
@@ -191,22 +197,23 @@ export function ProductDetail({
                 <BadgeCheck className="h-4 w-4" /> Customizable — make it yours
               </p>
 
-              {cz?.color && product.colors.length > 0 && (
+              {cz?.color && colorTypes.length > 0 && (
                 <div>
                   <label className="mb-2 block text-sm font-medium">Colour</label>
                   <div className="flex flex-wrap gap-2">
-                    {product.colors.map((c) => (
+                    {colorTypes.map((c) => (
                       <button
-                        key={c}
-                        onClick={() => setColor(c)}
+                        key={c.label}
+                        onClick={() => setColor(c.label)}
                         className={cn(
                           "rounded-full border px-4 py-2 text-sm transition-colors",
-                          color === c
+                          color === c.label
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-border hover:bg-surface",
                         )}
                       >
-                        {c}
+                        {c.label}
+                        {c.price ? ` (+${formatPrice(c.price)})` : ""}
                       </button>
                     ))}
                   </div>
@@ -431,50 +438,12 @@ export function ProductDetail({
       </div>
 
       {/* Reviews */}
-      <div className="mt-16">
-        <h2 className="font-serif text-3xl font-semibold text-foreground">
-          Customer Reviews
-        </h2>
-        <div className="mt-6 grid gap-6 md:grid-cols-3">
-          {reviews.map((r) => (
-            <figure
-              key={r.id}
-              className="flex flex-col rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]"
-            >
-              <div className="flex text-accent">
-                {Array.from({ length: r.rating }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-current" />
-                ))}
-              </div>
-              <h3 className="mt-3 font-serif text-lg text-foreground">
-                {r.title}
-              </h3>
-              {r.hasPhoto && (
-                <div className="mt-3 h-28 rounded-2xl bg-[linear-gradient(135deg,#f3d7d2,#d3a7a1)]" />
-              )}
-              <blockquote className="mt-3 flex-1 text-sm leading-relaxed text-muted">
-                “{r.body}”
-              </blockquote>
-              <figcaption className="mt-4 flex items-center gap-2 border-t border-border pt-4 text-sm">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-muted font-serif text-xs font-semibold text-primary">
-                  {r.initials}
-                </span>
-                <span className="flex flex-col">
-                  <span className="flex items-center gap-1 font-medium text-foreground">
-                    {r.author}
-                    {r.verified && (
-                      <BadgeCheck className="h-3.5 w-3.5 text-sage-deep" />
-                    )}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {r.verified ? "Verified purchase" : ""}
-                  </span>
-                </span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </div>
+      <ReviewsSection
+        productId={product.id}
+        slug={product.slug}
+        rating={product.rating}
+        reviews={reviews}
+      />
 
       {/* Related */}
       {related.length > 0 && (
