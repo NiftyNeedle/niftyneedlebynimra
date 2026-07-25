@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { notifyNewOrder } from "@/lib/email";
 
 export interface PlaceOrderState {
   ok?: boolean;
@@ -101,7 +102,17 @@ export async function placeOrder(
       .single();
 
     if (error) return { error: error.message };
-    return { ok: true, orderNumber: data.order_number as string };
+
+    const orderNumber = data.order_number as string;
+    await notifyNewOrder({
+      orderNumber,
+      name,
+      email,
+      total,
+      items: cleanItems.map((i) => ({ name: i.name, quantity: i.quantity })),
+    });
+
+    return { ok: true, orderNumber };
   } catch (e) {
     return {
       error: e instanceof Error ? e.message : "Checkout failed. Please try again.",

@@ -85,6 +85,22 @@ export async function updateName(_prev: AuthState, formData: FormData): Promise<
   return { message: "Profile updated." };
 }
 
+export async function updateNotificationPrefs(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const prefs = {
+    orders: formData.get("orders") === "on",
+    shipping: formData.get("shipping") === "on",
+    custom: formData.get("custom") === "on",
+    marketing: formData.get("marketing") === "on",
+  };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ data: { notif_prefs: prefs } });
+  if (error) return { error: error.message };
+  return { message: "Notification preferences saved." };
+}
+
 export async function updatePassword(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const password = String(formData.get("password") ?? "");
   if (password.length < 6)

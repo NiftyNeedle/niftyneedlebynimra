@@ -44,6 +44,32 @@ export async function getMyOrders(): Promise<MyOrder[]> {
   }
 }
 
+export interface MyCustomOrder {
+  id: string;
+  status: string;
+  title: string | null;
+  product_type: string | null;
+  description: string | null;
+  reference_images: string[];
+  created_at: string;
+}
+
+export async function getMyCustomOrders(): Promise<MyCustomOrder[]> {
+  const uid = await currentUserId();
+  if (!uid) return [];
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("custom_orders")
+      .select("id,status,title,product_type,description,reference_images,created_at")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false });
+    return (data as MyCustomOrder[]) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function getMyWishlistCount(): Promise<number> {
   const uid = await currentUserId();
   if (!uid) return 0;
