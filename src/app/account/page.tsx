@@ -1,21 +1,26 @@
 import Link from "next/link";
 import { Heart, Package, Sparkles, Wallet } from "lucide-react";
-import { orders } from "@/lib/orders";
+import { getMyOrders, getMyWishlistCount } from "@/lib/account";
 import { formatPrice } from "@/lib/utils";
 import { StatusBadge } from "@/components/account/order-timeline";
+import type { OrderStatus } from "@/lib/orders";
 
-const stats = [
-  { label: "Total Orders", value: orders.length.toString(), Icon: Package },
-  {
-    label: "Total Spent",
-    value: formatPrice(orders.reduce((n, o) => n + o.total, 0)),
-    Icon: Wallet,
-  },
-  { label: "Wishlist Items", value: "—", Icon: Heart },
-  { label: "Saved Designs", value: "2", Icon: Sparkles },
-];
+export const dynamic = "force-dynamic";
 
-export default function AccountDashboard() {
+export default async function AccountDashboard() {
+  const [orders, wishlistCount] = await Promise.all([
+    getMyOrders(),
+    getMyWishlistCount(),
+  ]);
+  const totalSpent = orders.reduce((n, o) => n + Number(o.total), 0);
+
+  const stats = [
+    { label: "Total Orders", value: String(orders.length), Icon: Package },
+    { label: "Total Spent", value: formatPrice(totalSpent), Icon: Wallet },
+    { label: "Wishlist Items", value: String(wishlistCount), Icon: Heart },
+    { label: "Saved Designs", value: "0", Icon: Sparkles },
+  ];
+
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -45,37 +50,40 @@ export default function AccountDashboard() {
             View all
           </Link>
         </div>
-        <div className="space-y-3">
-          {orders.slice(0, 3).map((o) => (
+        {orders.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border py-12 text-center">
+            <p className="text-muted">You haven&apos;t placed any orders yet.</p>
             <Link
-              key={o.id}
-              href={`/account/orders`}
-              className="flex items-center justify-between rounded-2xl border border-border p-4 transition-colors hover:bg-surface-muted/50"
+              href="/shop"
+              className="mt-2 inline-block text-sm font-medium text-accent hover:underline"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-3">
-                  {o.items.map((it, i) => (
-                    <span
-                      key={i}
-                      className="h-10 w-10 rounded-full border-2 border-surface"
-                      style={{ background: it.swatch }}
-                    />
-                  ))}
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">{o.id}</p>
-                  <p className="text-sm text-muted">{o.date}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <StatusBadge status={o.status} />
-                <span className="font-medium text-foreground">
-                  {formatPrice(o.total)}
-                </span>
-              </div>
+              Start shopping →
             </Link>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {orders.slice(0, 3).map((o) => (
+              <div
+                key={o.id}
+                className="flex items-center justify-between rounded-2xl border border-border p-4"
+              >
+                <div>
+                  <p className="font-medium text-foreground">{o.order_number}</p>
+                  <p className="text-sm text-muted">
+                    {new Date(o.created_at).toLocaleDateString()} ·{" "}
+                    {o.items.reduce((n, i) => n + i.quantity, 0)} item(s)
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <StatusBadge status={o.status as OrderStatus} />
+                  <span className="font-medium text-foreground">
+                    {formatPrice(o.total, o.currency)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

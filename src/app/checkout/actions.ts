@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export interface PlaceOrderState {
   ok?: boolean;
@@ -64,11 +65,22 @@ export async function placeOrder(
       options: i.options ?? null,
     }));
 
+    // Attach to the logged-in customer, if any.
+    let userId: string | null = null;
+    try {
+      const supabase = await createClient();
+      const { data: auth } = await supabase.auth.getUser();
+      userId = auth.user?.id ?? null;
+    } catch {
+      userId = null;
+    }
+
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("orders")
       .insert({
         status: "Order Received",
+        user_id: userId,
         name,
         email,
         phone: str(formData.get("phone")),

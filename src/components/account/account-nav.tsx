@@ -13,6 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { signOut } from "@/app/auth/actions";
 
 const links = [
   { href: "/account", label: "Dashboard", Icon: LayoutDashboard },
@@ -47,13 +48,15 @@ export function AccountNav() {
           </Link>
         );
       })}
-      <Link
-        href="/login"
-        className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-accent transition-colors hover:bg-surface-muted"
-      >
-        <LogOut className="h-4.5 w-4.5" />
-        Sign out
-      </Link>
+      <form action={signOut}>
+        <button
+          type="submit"
+          className="flex w-full shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-accent transition-colors hover:bg-surface-muted"
+        >
+          <LogOut className="h-4.5 w-4.5" />
+          Sign out
+        </button>
+      </form>
     </nav>
   );
 }

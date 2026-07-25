@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Product } from "./types";
+import { createClient, isSupabaseConfigured } from "./supabase/client";
 
 /* ------------------------------------------------------------------ *
  *  Client-side cart + wishlist store (localStorage persistence).
@@ -81,6 +82,54 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
   const [cartOpen, setCartOpen] = useState(false);
 
+  // Supabase auth → per-account wishlist persistence.
+  const supabase = useMemo(
+    () => (isSupabaseConfigured ? createClient() : null),
+    [],
+  );
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setUserId(data.user?.id ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  // On login, merge the local wishlist with the account's saved wishlist.
+  useEffect(() => {
+    if (!supabase || !userId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("wishlists")
+        .select("product_id")
+        .eq("user_id", userId);
+      if (cancelled) return;
+      const dbIds = (data ?? []).map((r) => r.product_id as string);
+      setWishlist((local) => {
+        const toAdd = local.filter((id) => !dbIds.includes(id));
+        if (toAdd.length) {
+          void supabase
+            .from("wishlists")
+            .upsert(toAdd.map((product_id) => ({ user_id: userId, product_id })));
+        }
+        return Array.from(new Set([...local, ...dbIds]));
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, userId, setWishlist]);
+
   const addToCart: StoreState["addToCart"] = useCallback(
     (product, opts) => {
       const quantity = opts?.quantity ?? 1;
@@ -135,12 +184,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const toggleWishlist = useCallback(
     (productId: string) =>
-      setWishlist((prev) =>
-        prev.includes(productId)
+      setWishlist((prev) => {
+        const has = prev.includes(productId);
+        if (supabase && userId) {
+          if (has) {
+            void supabase
+              .from("wishlists")
+              .delete()
+              .eq("user_id", userId)
+              .eq("product_id", productId);
+          } else {
+            void supabase
+              .from("wishlists")
+              .insert({ user_id: userId, product_id: productId });
+          }
+        }
+        return has
           ? prev.filter((id) => id !== productId)
-          : [...prev, productId],
-      ),
-    [setWishlist],
+          : [...prev, productId];
+      }),
+    [setWishlist, supabase, userId],
   );
 
   const isWishlisted = useCallback(

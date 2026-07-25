@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
+import { Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { categories } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -122,6 +122,13 @@ export function Navbar() {
             <Search className="h-5 w-5" />
           </button>
           <ThemeToggle className="hidden sm:grid" />
+          <Link
+            href="/account"
+            aria-label="My account"
+            className="hidden h-10 w-10 place-items-center rounded-full text-foreground transition-colors hover:bg-surface-muted sm:grid"
+          >
+            <User className="h-5 w-5" />
+          </Link>
           <Link
             href="/wishlist"
             aria-label="Wishlist"

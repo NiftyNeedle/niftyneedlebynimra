@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { AuthShell, authField } from "@/components/auth/auth-shell";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { ForgotForm } from "@/components/auth/forgot-form";
 
 export const metadata: Metadata = {
   title: "Reset password",
@@ -21,12 +22,7 @@ export default function ForgotPasswordPage() {
         </>
       }
     >
-      <form className="space-y-4">
-        <input type="email" placeholder="Email" className={authField} />
-        <button className="w-full rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]">
-          Send reset link
-        </button>
-      </form>
+      <ForgotForm />
     </AuthShell>
   );
 }

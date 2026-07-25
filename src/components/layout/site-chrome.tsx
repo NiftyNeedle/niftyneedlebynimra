@@ -7,7 +7,13 @@ import { Footer } from "./footer";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { BackToTop } from "@/components/ui/back-to-top";
 
-const bareRoutes = ["/admin", "/login", "/register", "/forgot-password"];
+const bareRoutes = [
+  "/admin",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+];
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
