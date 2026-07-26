@@ -70,6 +70,18 @@ export async function notifyNewOrder(o: OrderEmail) {
   );
 }
 
+export async function sendNewsletterWelcome(to: string) {
+  await send(
+    to,
+    "Welcome to the Nifty Needle circle 🧶",
+    shell("Welcome! 🧶", `
+      <p>Thank you for subscribing to Nifty Needle.</p>
+      <p>You'll be first to hear about new handmade collections, behind-the-scenes
+      stitches, and subscriber-only treats. No spam — just handmade joy.</p>
+      <p>With love,<br/>Nimra</p>`),
+  );
+}
+
 interface CustomEmail {
   name: string;
   email: string;

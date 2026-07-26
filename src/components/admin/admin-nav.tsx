@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Box,
   LayoutDashboard,
+  Mail,
   ShoppingCart,
   Sparkles,
   Star,
@@ -24,6 +25,7 @@ const links = [
   { href: "/admin/reviews", label: "Reviews", Icon: Star },
   { href: "/admin/customers", label: "Customers", Icon: Users },
   { href: "/admin/coupons", label: "Coupons", Icon: Tag },
+  { href: "/admin/newsletter", label: "Newsletter", Icon: Mail },
 ];
 
 export function AdminNav() {

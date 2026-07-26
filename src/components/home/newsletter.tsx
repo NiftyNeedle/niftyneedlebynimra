@@ -1,19 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Send } from "lucide-react";
+import {
+  subscribeNewsletter,
+  type NewsletterState,
+} from "@/app/newsletter/actions";
 
 export function Newsletter() {
-  const [email, setEmail] = useState("");
+  const [state, formAction, pending] = useActionState<NewsletterState, FormData>(
+    subscribeNewsletter,
+    {},
+  );
   const [submitted, setSubmitted] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.includes("@")) return;
-    // TODO: wire to Resend / Supabase newsletter table
-    setSubmitted(true);
-  }
+  useEffect(() => {
+    if (state.ok) setSubmitted(true);
+  }, [state]);
 
   return (
     <section className="section-px mx-auto max-w-[90rem] pb-24">
@@ -46,30 +50,34 @@ export function Newsletter() {
             ) : (
               <motion.form
                 key="form"
-                onSubmit={handleSubmit}
+                action={formAction}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mx-auto mt-8 flex max-w-md flex-col gap-3 sm:flex-row"
               >
                 <input
                   type="email"
+                  name="email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   aria-label="Email address"
                   className="flex-1 rounded-full border border-border bg-surface/80 px-6 py-4 text-sm text-foreground outline-none backdrop-blur transition-shadow placeholder:text-muted focus:ring-2 focus:ring-ring"
                 />
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-4 text-sm font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]"
+                  disabled={pending}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-4 text-sm font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] disabled:opacity-60"
                 >
-                  Subscribe
-                  <Send className="h-4 w-4" />
+                  {pending ? "Subscribing…" : "Subscribe"}
+                  {!pending && <Send className="h-4 w-4" />}
                 </button>
               </motion.form>
             )}
           </AnimatePresence>
+
+          {state.error && !submitted && (
+            <p className="mt-3 text-sm text-accent">{state.error}</p>
+          )}
 
           <p className="mt-4 text-xs text-muted">
             By subscribing you agree to our privacy policy. Unsubscribe anytime.
