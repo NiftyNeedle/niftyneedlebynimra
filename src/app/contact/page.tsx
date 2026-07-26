@@ -71,9 +71,11 @@ export default function ContactPage() {
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-surface-muted text-primary">
                 <c.Icon className="h-6 w-6" />
               </span>
-              <span>
+              <span className="min-w-0">
                 <span className="block text-sm text-muted">{c.label}</span>
-                <span className="font-medium text-foreground">{c.value}</span>
+                <span className="block break-words font-medium text-foreground">
+                  {c.value}
+                </span>
               </span>
             </a>
           ))}

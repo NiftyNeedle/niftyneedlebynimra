@@ -40,7 +40,7 @@ export function AdminNav() {
           Admin Studio
         </p>
       </div>
-      <nav className="flex-1 space-y-1 px-4">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4">
         {links.map(({ href, label, Icon }) => {
           const active =
             href === "/admin" ? pathname === href : pathname.startsWith(href);
