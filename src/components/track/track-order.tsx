@@ -48,7 +48,7 @@ export function TrackOrder() {
           <input
             value={id}
             onChange={(e) => setId(e.target.value)}
-            placeholder="Enter your order number (e.g. NN-1001)"
+            placeholder="Enter your order number (e.g. NN-7K3QX9P2)"
             className="w-full rounded-full border border-border bg-surface-muted/40 py-3 pl-12 pr-4 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>

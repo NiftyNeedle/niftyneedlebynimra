@@ -15,9 +15,10 @@ export interface TrackedOrder {
 export async function lookupOrder(
   orderNumber: string,
 ): Promise<TrackedOrder | null> {
-  let num = orderNumber.trim().toUpperCase();
+  let num = orderNumber.trim().toUpperCase().replace(/\s+/g, "");
   if (!num) return null;
-  if (/^\d+$/.test(num)) num = "NN-" + num;
+  // Accept the code with or without the "NN-" prefix.
+  if (!num.startsWith("NN-")) num = "NN-" + num;
   try {
     const admin = createAdminClient();
     const { data } = await admin
