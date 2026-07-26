@@ -8,6 +8,7 @@ import {
   WhatsAppIcon,
   SOCIALS,
 } from "@/components/ui/social-icons";
+import { EmailLink } from "@/components/ui/email-link";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -60,25 +61,42 @@ export default function ContactPage() {
       <div className="section-px mx-auto max-w-5xl py-12">
         {/* Contact channels */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {channels.map((c) => (
-            <a
-              key={c.label}
-              href={c.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-soft)] transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]"
-            >
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-surface-muted text-primary">
-                <c.Icon className="h-6 w-6" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm text-muted">{c.label}</span>
-                <span className="block break-words font-medium text-foreground">
-                  {c.value}
+          {channels.map((c) => {
+            const cardClass =
+              "flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-soft)] transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]";
+            const inner = (
+              <>
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-surface-muted text-primary">
+                  <c.Icon className="h-6 w-6" />
                 </span>
-              </span>
-            </a>
-          ))}
+                <span className="min-w-0">
+                  <span className="block text-sm text-muted">{c.label}</span>
+                  <span className="block break-words font-medium text-foreground">
+                    {c.value}
+                  </span>
+                </span>
+              </>
+            );
+            // Email: mailto on phones, Gmail compose on desktop.
+            if (c.label === "Email") {
+              return (
+                <EmailLink key={c.label} to={SOCIALS.email} className={cardClass}>
+                  {inner}
+                </EmailLink>
+              );
+            }
+            return (
+              <a
+                key={c.label}
+                href={c.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cardClass}
+              >
+                {inner}
+              </a>
+            );
+          })}
         </div>
 
         {/* Hours + map */}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { orderStages } from "@/lib/orders";
 import { useToast } from "@/components/ui/toast";
+import { EmailLink } from "@/components/ui/email-link";
 import { updateOrderStatus, setOrderTracking } from "@/app/admin/orders/actions";
 
 export interface OrderItem {
@@ -193,18 +194,13 @@ export function OrdersTable({ orders }: { orders: AdminOrder[] }) {
                       disabled={pending}
                       onSave={(v) => saveTracking(o.id, v)}
                     />
-                    <a
-                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
-                        o.email ?? "",
-                      )}&su=${encodeURIComponent(
-                        `Your Nifty Needle order ${o.order_number}`,
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <EmailLink
+                      to={o.email ?? ""}
+                      subject={`Your Nifty Needle order ${o.order_number}`}
                       className="rounded-full border border-border px-4 py-1.5 text-sm font-medium transition-colors hover:bg-surface-muted"
                     >
                       Email customer
-                    </a>
+                    </EmailLink>
                   </div>
                 </div>
               )}
