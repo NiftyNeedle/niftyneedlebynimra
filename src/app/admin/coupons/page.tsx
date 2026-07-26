@@ -1,42 +1,29 @@
-import { Tag } from "lucide-react";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { COUPONS } from "@/lib/coupons";
+import { CouponsManager, type AdminCoupon } from "@/components/admin/coupons-manager";
 
-export default function AdminCouponsPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold text-foreground">
-          Coupons
-        </h1>
-        <p className="text-sm text-muted">
-          Active discount codes customers can use at the cart.
-        </p>
-      </div>
+export const dynamic = "force-dynamic";
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {COUPONS.map((c) => (
-          <div
-            key={c.code}
-            className="rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]"
-          >
-            <span className="inline-flex items-center gap-2 rounded-full bg-surface-muted px-3 py-1 font-mono text-sm font-semibold text-primary">
-              <Tag className="h-3.5 w-3.5" />
-              {c.code}
-            </span>
-            <p className="mt-4 font-serif text-3xl font-semibold text-foreground">
-              {Math.round(c.rate * 100)}% off
-            </p>
-            <p className="mt-1 text-sm text-muted">{c.description}</p>
-          </div>
-        ))}
-      </div>
+export default async function AdminCouponsPage() {
+  let coupons: AdminCoupon[] = [];
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("coupons")
+      .select("id, code, rate, description, active")
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    coupons = (data as AdminCoupon[]) ?? [];
+  } catch {
+    // DB/coupons table not set up yet → show the built-in codes read-only.
+    coupons = COUPONS.map((c, i) => ({
+      id: `builtin-${i}`,
+      code: c.code,
+      rate: c.rate,
+      description: c.description,
+      active: true,
+    }));
+  }
 
-      <p className="rounded-2xl border border-border bg-surface-muted/40 p-4 text-sm text-muted">
-        Coupon codes are configured in the site&apos;s code
-        (<span className="font-mono">src/lib/coupons.ts</span>). Ask your
-        developer to add, change, or remove a code — or we can build a
-        self-serve coupon manager here later.
-      </p>
-    </div>
-  );
+  return <CouponsManager coupons={coupons} />;
 }

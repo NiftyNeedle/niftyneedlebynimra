@@ -248,7 +248,7 @@ function ProductForm({
     <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overflow-x-hidden bg-espresso/40 p-3 backdrop-blur-sm sm:p-4">
       <form
         action={formAction}
-        className="my-6 max-h-[92vh] w-full max-w-2xl overflow-y-auto overflow-x-hidden rounded-3xl border border-border bg-surface p-5 shadow-[var(--shadow-lift)] sm:my-8 md:p-8"
+        className="my-4 max-h-[94dvh] w-full max-w-2xl overflow-y-auto overflow-x-hidden rounded-3xl border border-border bg-surface p-4 shadow-[var(--shadow-lift)] sm:my-8 sm:p-6 md:p-8"
       >
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-serif text-2xl text-foreground">
@@ -266,7 +266,7 @@ function ProductForm({
 
         {editing && <input type="hidden" name="id" value={editing.id} />}
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 [&>*]:min-w-0 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className={label}>Name *</label>
             <input name="name" required defaultValue={base?.name} className={field} />
@@ -413,7 +413,7 @@ function ProductForm({
           </div>
 
           {customizable && (
-            <div className="sm:col-span-2 space-y-4 rounded-2xl border border-border p-4">
+            <div className="min-w-0 space-y-4 rounded-2xl border border-border p-3 sm:col-span-2 sm:p-4">
               <div>
                 <p className="text-sm font-medium text-foreground">
                   Customization options shown to customers
@@ -515,7 +515,7 @@ function OptionListEditor({
   const add = () => setOptions((prev) => [...prev, { label: "", price: 0 }]);
 
   return (
-    <div className="rounded-xl bg-surface-muted/50 p-3">
+    <div className="min-w-0 rounded-xl bg-surface-muted/50 p-2.5 sm:p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-medium text-foreground">{title}</span>
         <button
@@ -528,14 +528,14 @@ function OptionListEditor({
       </div>
       <div className="space-y-2">
         {options.map((o, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <div key={i} className="flex min-w-0 items-center gap-2">
             <input
               value={o.label}
               onChange={(e) => update(i, { label: e.target.value })}
               placeholder="Option name"
-              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="w-0 min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
-            <div className="relative w-20 shrink-0 sm:w-28">
+            <div className="relative w-16 shrink-0 sm:w-24">
               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted">
                 +$
               </span>

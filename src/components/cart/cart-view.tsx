@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Minus, Plus, Tag, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { ButtonLink } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useCurrency } from "@/components/currency/currency-provider";
-import { findCoupon } from "@/lib/coupons";
+import { validateCoupon } from "@/app/cart/coupon-actions";
 
 const SHIP_COST = 6;
 
@@ -17,6 +17,7 @@ export function CartView() {
   const { format } = useCurrency();
   const [code, setCode] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [applying, startApply] = useTransition();
 
   const shipping = cartSubtotal === 0 ? 0 : SHIP_COST;
   const discountAmount = cartSubtotal * discount;
@@ -24,13 +25,15 @@ export function CartView() {
   const total = cartSubtotal - discountAmount + shipping + tax;
 
   const applyCoupon = () => {
-    const coupon = findCoupon(code);
-    if (coupon) {
-      setDiscount(coupon.rate);
-      toast(`Coupon applied — ${coupon.rate * 100}% off!`);
-    } else {
-      toast("That coupon code isn't valid", "info");
-    }
+    startApply(async () => {
+      const coupon = await validateCoupon(code);
+      if (coupon) {
+        setDiscount(coupon.rate);
+        toast(`Coupon applied — ${Math.round(coupon.rate * 100)}% off!`);
+      } else {
+        toast("That coupon code isn't valid", "info");
+      }
+    });
   };
 
   if (cart.length === 0) {
@@ -148,9 +151,10 @@ export function CartView() {
               </div>
               <button
                 onClick={applyCoupon}
-                className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground"
+                disabled={applying}
+                className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
               >
-                Apply
+                {applying ? "…" : "Apply"}
               </button>
             </div>
             <p className="mt-2 text-xs text-muted">
