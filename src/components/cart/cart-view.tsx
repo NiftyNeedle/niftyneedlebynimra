@@ -7,8 +7,8 @@ import { useStore } from "@/lib/store";
 import { ButtonLink } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useCurrency } from "@/components/currency/currency-provider";
+import { findCoupon } from "@/lib/coupons";
 
-const COUPONS: Record<string, number> = { WELCOME10: 0.1, LOVE15: 0.15 };
 const SHIP_COST = 6;
 
 export function CartView() {
@@ -24,10 +24,10 @@ export function CartView() {
   const total = cartSubtotal - discountAmount + shipping + tax;
 
   const applyCoupon = () => {
-    const rate = COUPONS[code.toUpperCase()];
-    if (rate) {
-      setDiscount(rate);
-      toast(`Coupon applied — ${rate * 100}% off!`);
+    const coupon = findCoupon(code);
+    if (coupon) {
+      setDiscount(coupon.rate);
+      toast(`Coupon applied — ${coupon.rate * 100}% off!`);
     } else {
       toast("That coupon code isn't valid", "info");
     }

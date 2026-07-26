@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3,
   Box,
   LayoutDashboard,
   ShoppingCart,
@@ -25,7 +24,6 @@ const links = [
   { href: "/admin/reviews", label: "Reviews", Icon: Star },
   { href: "/admin/customers", label: "Customers", Icon: Users },
   { href: "/admin/coupons", label: "Coupons", Icon: Tag },
-  { href: "/admin/analytics", label: "Analytics", Icon: BarChart3 },
 ];
 
 export function AdminNav() {

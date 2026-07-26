@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Gift, Hand, Heart, Sparkles } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 
 const floaties = [
@@ -85,7 +85,7 @@ export function Hero() {
           <ButtonLink href="/custom" size="lg" variant="outline">
             Customize Your Own
           </ButtonLink>
-          <ButtonLink href="/shop" size="lg" variant="ghost">
+          <ButtonLink href="/shop" size="lg" variant="outline">
             Explore Collection
           </ButtonLink>
         </motion.div>
@@ -97,13 +97,19 @@ export function Hero() {
           className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted"
         >
           <span className="flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-accent" />
+            <Heart className="h-4 w-4 text-accent" />
             Handmade with love
           </span>
           <span className="hidden h-4 w-px bg-border sm:block" />
-          <span>100% handmade</span>
+          <span className="flex items-center gap-1.5">
+            <Hand className="h-4 w-4 text-accent" />
+            100% handmade
+          </span>
           <span className="hidden h-4 w-px bg-border sm:block" />
-          <span>Made just for you</span>
+          <span className="flex items-center gap-1.5">
+            <Gift className="h-4 w-4 text-accent" />
+            Made just for you
+          </span>
         </motion.div>
       </div>
     </section>

@@ -1,29 +1,29 @@
 import Link from "next/link";
 import {
-  ArrowUpRight,
-  DollarSign,
-  Eye,
-  Package,
-  Users,
   AlertTriangle,
+  Box,
+  DollarSign,
+  Package,
+  Sparkles,
+  Star,
 } from "lucide-react";
-import { products } from "@/lib/data";
-import { orders } from "@/lib/orders";
+import { getDashboardData } from "@/lib/admin-stats";
 import { formatPrice } from "@/lib/utils";
-import { RevenueChart } from "@/components/admin/revenue-chart";
 import { StatusBadge } from "@/components/account/order-timeline";
+import type { OrderStatus } from "@/lib/orders";
 
-const stats = [
-  { label: "Revenue (30d)", value: "$840", delta: "+18%", Icon: DollarSign },
-  { label: "Orders (30d)", value: "14", delta: "+9%", Icon: Package },
-  { label: "Customers", value: "63", delta: "+12%", Icon: Users },
-  { label: "Visitors (30d)", value: "1,240", delta: "+7%", Icon: Eye },
-];
+export const dynamic = "force-dynamic";
 
-const popular = products.filter((p) => p.isBestSeller).slice(0, 5);
-const lowStock = products.filter((p) => !p.inStock);
+export default async function AdminDashboard() {
+  const d = await getDashboardData();
 
-export default function AdminDashboard() {
+  const stats = [
+    { label: "Revenue (paid)", value: formatPrice(d.revenue), Icon: DollarSign },
+    { label: "Orders", value: String(d.orderCount), Icon: Package },
+    { label: "Products", value: String(d.productCount), Icon: Box },
+    { label: "New custom requests", value: String(d.customNew), Icon: Sparkles },
+  ];
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
             Dashboard
           </h1>
           <p className="text-sm text-muted">
-            Welcome back — here&apos;s how the studio is doing.
+            A live snapshot of your shop.
           </p>
         </div>
         <Link
@@ -50,15 +50,9 @@ export default function AdminDashboard() {
             key={s.label}
             className="rounded-3xl border border-border bg-surface p-5 shadow-[var(--shadow-soft)]"
           >
-            <div className="flex items-center justify-between">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-surface-muted text-primary">
-                <s.Icon className="h-5 w-5" />
-              </span>
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-sage/15 px-2 py-0.5 text-xs font-medium text-sage-deep">
-                <ArrowUpRight className="h-3 w-3" />
-                {s.delta}
-              </span>
-            </div>
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-surface-muted text-primary">
+              <s.Icon className="h-5 w-5" />
+            </span>
             <p className="mt-4 font-serif text-3xl font-semibold text-foreground">
               {s.value}
             </p>
@@ -67,85 +61,27 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        {/* Revenue chart */}
-        <div className="rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="font-serif text-xl text-foreground">
-              Revenue overview
-            </h2>
-            <span className="text-sm text-muted">2026</span>
-          </div>
-          <RevenueChart />
-        </div>
-
-        {/* Low stock */}
-        <div className="rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]">
-          <h2 className="mb-4 flex items-center gap-2 font-serif text-xl text-foreground">
-            <AlertTriangle className="h-5 w-5 text-accent" />
-            Low stock alerts
-          </h2>
-          {lowStock.length === 0 ? (
-            <p className="text-sm text-muted">Everything is well stocked.</p>
-          ) : (
-            <div className="space-y-3">
-              {lowStock.map((p) => (
-                <div key={p.id} className="flex items-center gap-3">
-                  <span
-                    className="h-10 w-10 rounded-xl"
-                    style={{ background: p.swatch }}
-                  />
-                  <span className="flex-1 text-sm font-medium text-foreground">
-                    {p.name}
-                  </span>
-                  <span className="rounded-full bg-accent/15 px-2.5 py-1 text-xs text-accent">
-                    Out of stock
-                  </span>
-                </div>
-              ))}
-            </div>
+      {/* Attention row */}
+      {(d.pendingReviews > 0 || d.pendingPayment > 0) && (
+        <div className="flex flex-wrap gap-3 text-sm">
+          {d.pendingReviews > 0 && (
+            <Link
+              href="/admin/reviews"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 font-medium transition-colors hover:bg-surface-muted"
+            >
+              <Star className="h-4 w-4 text-accent" />
+              {d.pendingReviews} review{d.pendingReviews === 1 ? "" : "s"} awaiting approval
+            </Link>
           )}
-          <div className="mt-6 border-t border-border pt-4">
-            <h3 className="mb-3 text-sm font-medium text-foreground">
-              Abandoned carts
-            </h3>
-            <p className="text-sm text-muted">
-              2 carts worth <span className="font-medium">$88</span> —{" "}
-              <Link href="#" className="text-accent hover:underline">
-                send reminder
-              </Link>
-            </p>
-          </div>
+          {d.pendingPayment > 0 && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-muted">
+              {d.pendingPayment} unpaid checkout{d.pendingPayment === 1 ? "" : "s"}
+            </span>
+          )}
         </div>
-      </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Popular products */}
-        <div className="rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]">
-          <h2 className="mb-4 font-serif text-xl text-foreground">
-            Popular products
-          </h2>
-          <div className="space-y-3">
-            {popular.map((p, i) => (
-              <div key={p.id} className="flex items-center gap-3">
-                <span className="w-4 text-sm font-semibold text-muted">
-                  {i + 1}
-                </span>
-                <span
-                  className="h-10 w-10 rounded-xl"
-                  style={{ background: p.swatch }}
-                />
-                <span className="flex-1 text-sm font-medium text-foreground">
-                  {p.name}
-                </span>
-                <span className="text-sm text-muted">
-                  {p.reviewCount} sold
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Recent orders */}
         <div className="rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]">
           <div className="mb-4 flex items-center justify-between">
@@ -157,22 +93,91 @@ export default function AdminDashboard() {
               View all
             </Link>
           </div>
-          <div className="space-y-3">
-            {orders.map((o) => (
-              <div
-                key={o.id}
-                className="flex items-center justify-between rounded-2xl border border-border p-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-foreground">{o.id}</p>
-                  <p className="text-xs text-muted">{o.date}</p>
+          {d.recentOrders.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted">No orders yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {d.recentOrders.map((o) => (
+                <div
+                  key={o.order_number}
+                  className="flex items-center justify-between rounded-2xl border border-border p-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {o.order_number}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {o.name ?? "—"} · {new Date(o.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StatusBadge status={o.status as OrderStatus} />
+                    <span className="text-sm font-medium text-foreground">
+                      {formatPrice(o.total)}
+                    </span>
+                  </div>
                 </div>
-                <StatusBadge status={o.status} />
-                <span className="text-sm font-medium text-foreground">
-                  {formatPrice(o.total)}
-                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Low stock + popular */}
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]">
+            <h2 className="mb-4 flex items-center gap-2 font-serif text-xl text-foreground">
+              <AlertTriangle className="h-5 w-5 text-accent" />
+              Out of stock
+            </h2>
+            {d.lowStock.length === 0 ? (
+              <p className="text-sm text-muted">Everything is in stock. 🧶</p>
+            ) : (
+              <div className="space-y-3">
+                {d.lowStock.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3">
+                    <span
+                      className="h-10 w-10 rounded-xl bg-cover bg-center"
+                      style={
+                        p.image_url
+                          ? { backgroundImage: `url(${p.image_url})` }
+                          : { background: p.swatch }
+                      }
+                    />
+                    <span className="flex-1 text-sm font-medium text-foreground">
+                      {p.name}
+                    </span>
+                    <span className="rounded-full bg-accent/15 px-2.5 py-1 text-xs text-accent">
+                      Out of stock
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+          </div>
+
+          <div className="rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]">
+            <h2 className="mb-4 font-serif text-xl text-foreground">
+              Best selling
+            </h2>
+            {d.popular.length === 0 ? (
+              <p className="text-sm text-muted">No sales yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {d.popular.map((p, i) => (
+                  <div key={p.name} className="flex items-center gap-3">
+                    <span className="w-4 text-sm font-semibold text-muted">
+                      {i + 1}
+                    </span>
+                    <span className="flex-1 text-sm font-medium text-foreground">
+                      {p.name}
+                    </span>
+                    <span className="text-sm text-muted">
+                      {p.units} sold
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
