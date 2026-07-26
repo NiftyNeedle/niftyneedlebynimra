@@ -40,3 +40,16 @@ export async function finalizeOrderById(
 
   return data.order_number as string;
 }
+
+/** Deletes an order only if it's still awaiting payment (abandoned checkout). */
+export async function cancelPendingOrder(
+  orderId: string | undefined | null,
+): Promise<void> {
+  if (!orderId) return;
+  const admin = createAdminClient();
+  await admin
+    .from("orders")
+    .delete()
+    .eq("id", orderId)
+    .eq("status", "Pending payment");
+}

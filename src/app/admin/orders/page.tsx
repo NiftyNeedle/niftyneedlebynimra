@@ -10,6 +10,7 @@ export default async function AdminOrdersPage() {
     const { data } = await admin
       .from("orders")
       .select("*")
+      .neq("status", "Pending payment")
       .order("created_at", { ascending: false });
     orders = (data as AdminOrder[]) ?? [];
   } catch {

@@ -1,5 +1,5 @@
 import { getStripe } from "@/lib/stripe";
-import { finalizeOrderById } from "@/lib/orders-finalize";
+import { finalizeOrderById, cancelPendingOrder } from "@/lib/orders-finalize";
 
 // Stripe sends payment confirmations here (configure in the Stripe dashboard).
 export async function POST(req: Request) {
@@ -28,6 +28,10 @@ export async function POST(req: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as { metadata?: { order_id?: string } };
     await finalizeOrderById(session.metadata?.order_id);
+  } else if (event.type === "checkout.session.expired") {
+    // Customer abandoned payment → remove the unpaid order.
+    const session = event.data.object as { metadata?: { order_id?: string } };
+    await cancelPendingOrder(session.metadata?.order_id);
   }
 
   return new Response("ok", { status: 200 });

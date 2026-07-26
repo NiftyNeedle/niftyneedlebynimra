@@ -24,6 +24,7 @@ export async function lookupOrder(
       .from("orders")
       .select("order_number,status,created_at,tracking,total,currency,items")
       .eq("order_number", num)
+      .neq("status", "Pending payment")
       .maybeSingle();
     return (data as TrackedOrder) ?? null;
   } catch {

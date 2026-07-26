@@ -62,22 +62,15 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Attention row */}
-      {(d.pendingReviews > 0 || d.pendingPayment > 0) && (
+      {d.pendingReviews > 0 && (
         <div className="flex flex-wrap gap-3 text-sm">
-          {d.pendingReviews > 0 && (
-            <Link
-              href="/admin/reviews"
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 font-medium transition-colors hover:bg-surface-muted"
-            >
-              <Star className="h-4 w-4 text-accent" />
-              {d.pendingReviews} review{d.pendingReviews === 1 ? "" : "s"} awaiting approval
-            </Link>
-          )}
-          {d.pendingPayment > 0 && (
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-muted">
-              {d.pendingPayment} unpaid checkout{d.pendingPayment === 1 ? "" : "s"}
-            </span>
-          )}
+          <Link
+            href="/admin/reviews"
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 font-medium transition-colors hover:bg-surface-muted"
+          >
+            <Star className="h-4 w-4 text-accent" />
+            {d.pendingReviews} review{d.pendingReviews === 1 ? "" : "s"} awaiting approval
+          </Link>
         </div>
       )}
 
