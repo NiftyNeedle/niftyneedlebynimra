@@ -194,7 +194,13 @@ export function OrdersTable({ orders }: { orders: AdminOrder[] }) {
                       onSave={(v) => saveTracking(o.id, v)}
                     />
                     <a
-                      href={`mailto:${o.email ?? ""}`}
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
+                        o.email ?? "",
+                      )}&su=${encodeURIComponent(
+                        `Your Nifty Needle order ${o.order_number}`,
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="rounded-full border border-border px-4 py-1.5 text-sm font-medium transition-colors hover:bg-surface-muted"
                     >
                       Email customer
