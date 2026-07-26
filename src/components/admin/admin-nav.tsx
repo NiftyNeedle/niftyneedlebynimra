@@ -6,6 +6,7 @@ import {
   Box,
   LayoutDashboard,
   Mail,
+  Newspaper,
   ShoppingCart,
   Sparkles,
   Star,
@@ -25,6 +26,7 @@ const links = [
   { href: "/admin/reviews", label: "Reviews", Icon: Star },
   { href: "/admin/customers", label: "Customers", Icon: Users },
   { href: "/admin/coupons", label: "Coupons", Icon: Tag },
+  { href: "/admin/blog", label: "Blog", Icon: Newspaper },
   { href: "/admin/newsletter", label: "Newsletter", Icon: Mail },
 ];
 

@@ -2,13 +2,12 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Clock } from "lucide-react";
-import { blogPosts, getPostBySlug } from "@/lib/blog";
+import { getPosts, getPostBySlug } from "@/lib/blog";
 import { PageHeader } from "@/components/ui/page-header";
 import { ButtonLink } from "@/components/ui/button";
 
-export function generateStaticParams() {
-  return blogPosts.map((p) => ({ slug: p.slug }));
-}
+// Posts are managed from the admin panel, so render on demand.
+export const revalidate = 0;
 
 export async function generateMetadata({
   params,
@@ -16,7 +15,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
   if (!post) return { title: "Post not found" };
   return {
     title: post.title,
@@ -31,10 +30,12 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
   if (!post) notFound();
 
-  const related = blogPosts.filter((p) => p.slug !== post.slug).slice(0, 2);
+  const related = (await getPosts())
+    .filter((p) => p.slug !== post.slug)
+    .slice(0, 2);
 
   return (
     <>
@@ -54,8 +55,12 @@ export default async function BlogPostPage({
         </div>
 
         <div
-          className="my-8 h-72 rounded-[2rem]"
-          style={{ background: post.swatch }}
+          className="my-8 h-72 rounded-[2rem] bg-cover bg-center sm:h-96"
+          style={
+            post.imageUrl
+              ? { backgroundImage: `url(${post.imageUrl})` }
+              : { background: post.swatch }
+          }
         />
 
         <div className="space-y-6 text-lg leading-relaxed text-foreground/90">
@@ -80,30 +85,39 @@ export default async function BlogPostPage({
         </div>
       </article>
 
-      <div className="section-px mx-auto max-w-3xl pb-16">
-        <h2 className="mb-5 font-serif text-2xl text-foreground">
-          Keep reading
-        </h2>
-        <div className="grid gap-6 sm:grid-cols-2">
-          {related.map((p) => (
-            <Link
-              key={p.slug}
-              href={`/blog/${p.slug}`}
-              className="group overflow-hidden rounded-3xl border border-border bg-surface shadow-[var(--shadow-soft)] transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]"
-            >
-              <div className="h-36" style={{ background: p.swatch }} />
-              <div className="p-5">
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                  {p.category}
-                </span>
-                <h3 className="mt-1 font-serif text-lg text-foreground">
-                  {p.title}
-                </h3>
-              </div>
-            </Link>
-          ))}
+      {related.length > 0 && (
+        <div className="section-px mx-auto max-w-3xl pb-16">
+          <h2 className="mb-5 font-serif text-2xl text-foreground">
+            Keep reading
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-2">
+            {related.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/blog/${p.slug}`}
+                className="group overflow-hidden rounded-3xl border border-border bg-surface shadow-[var(--shadow-soft)] transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]"
+              >
+                <div
+                  className="h-36 bg-cover bg-center"
+                  style={
+                    p.imageUrl
+                      ? { backgroundImage: `url(${p.imageUrl})` }
+                      : { background: p.swatch }
+                  }
+                />
+                <div className="p-5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                    {p.category}
+                  </span>
+                  <h3 className="mt-1 font-serif text-lg text-foreground">
+                    {p.title}
+                  </h3>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
