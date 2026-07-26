@@ -5,6 +5,7 @@ import { sendNewsletterWelcome } from "@/lib/email";
 
 export interface NewsletterState {
   ok?: boolean;
+  already?: boolean;
   error?: string;
 }
 
@@ -26,8 +27,9 @@ export async function subscribeNewsletter(
       .insert({ email });
 
     if (error) {
-      // 23505 = already subscribed (fine); 42P01 = table not created yet (accept gracefully).
-      if (error.code === "23505") return { ok: true };
+      // 23505 = this email is already subscribed.
+      if (error.code === "23505") return { ok: true, already: true };
+      // 42P01 = table not created yet → accept gracefully.
       if (error.code === "42P01") return { ok: true };
       return { error: error.message };
     }

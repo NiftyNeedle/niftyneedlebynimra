@@ -19,6 +19,8 @@ export function Newsletter() {
     if (state.ok) setSubmitted(true);
   }, [state]);
 
+  const alreadySubscribed = submitted && state.already;
+
   return (
     <section className="section-px mx-auto max-w-[90rem] pb-24">
       <div className="relative overflow-hidden rounded-[2.5rem] border border-border bg-gradient-to-br from-sage/20 via-surface to-pink/20 px-6 py-16 text-center md:px-16 md:py-20">
@@ -45,7 +47,9 @@ export function Newsletter() {
                 <span className="grid h-6 w-6 place-items-center rounded-full bg-white/20">
                   <Check className="h-4 w-4" />
                 </span>
-                You&apos;re in! Check your inbox for a warm welcome.
+                {alreadySubscribed
+                  ? "You're already subscribed — thanks for being part of the circle!"
+                  : "You're in! Check your inbox for a warm welcome."}
               </motion.div>
             ) : (
               <motion.form
