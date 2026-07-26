@@ -59,7 +59,7 @@ export function Navbar() {
         <Logo />
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-1 lg:flex">
+        <div className="hidden items-center gap-0.5 lg:flex">
           <div
             className="relative"
             onMouseEnter={() => setShopOpen(true)}
@@ -67,7 +67,7 @@ export function Navbar() {
           >
             <Link
               href="/shop"
-              className="rounded-full px-4 py-2 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+              className="whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-surface-muted hover:text-foreground"
             >
               Collections
             </Link>
@@ -108,7 +108,7 @@ export function Navbar() {
             <Link
               key={l.href}
               href={l.href}
-              className="rounded-full px-4 py-2 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+              className="whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-surface-muted hover:text-foreground"
             >
               {l.label}
             </Link>
@@ -144,7 +144,11 @@ export function Navbar() {
             )}
           </button>
 
-          <ButtonLink href="/shop" size="sm" className="ml-1 hidden lg:inline-flex">
+          <ButtonLink
+            href="/shop"
+            size="sm"
+            className="ml-1 hidden whitespace-nowrap xl:inline-flex"
+          >
             Shop Now
           </ButtonLink>
 

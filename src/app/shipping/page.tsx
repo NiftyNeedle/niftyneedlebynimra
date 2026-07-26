@@ -27,7 +27,7 @@ export default function ShippingPage() {
           {
             heading: "Shipping options & costs",
             body: [
-              "Standard shipping (7–12 days) and Express shipping (3–5 days) are available at checkout. Orders over $75 qualify for free standard shipping.",
+              "Standard shipping (7–12 days) and Express shipping (3–5 days) are available at checkout, calculated based on your destination.",
               "I'm happy to ship internationally. Costs are calculated automatically based on your destination.",
             ],
           },

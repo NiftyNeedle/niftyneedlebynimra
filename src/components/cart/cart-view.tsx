@@ -9,7 +9,6 @@ import { useToast } from "@/components/ui/toast";
 import { useCurrency } from "@/components/currency/currency-provider";
 
 const COUPONS: Record<string, number> = { WELCOME10: 0.1, LOVE15: 0.15 };
-const FREE_SHIP = 75;
 const SHIP_COST = 6;
 
 export function CartView() {
@@ -19,7 +18,7 @@ export function CartView() {
   const [code, setCode] = useState("");
   const [discount, setDiscount] = useState(0);
 
-  const shipping = cartSubtotal >= FREE_SHIP || cartSubtotal === 0 ? 0 : SHIP_COST;
+  const shipping = cartSubtotal === 0 ? 0 : SHIP_COST;
   const discountAmount = cartSubtotal * discount;
   const tax = (cartSubtotal - discountAmount) * 0.05;
   const total = cartSubtotal - discountAmount + shipping + tax;

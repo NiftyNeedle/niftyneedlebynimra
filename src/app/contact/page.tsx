@@ -1,32 +1,43 @@
 import type { Metadata } from "next";
-import { Clock, Mail, MessageCircle, AtSign } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
+import { Clock, Mail } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { ContactForm } from "@/components/contact/contact-form";
+import {
+  InstagramIcon,
+  FacebookIcon,
+  SOCIALS,
+} from "@/components/ui/social-icons";
 
 export const metadata: Metadata = {
   title: "Contact",
   description:
-    "Get in touch with the Nifty Needle studio — we'd love to hear from you.",
+    "Get in touch with the Nifty Needle studio — I'd love to hear from you.",
 };
 
-const channels = [
+const channels: {
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  label: string;
+  value: string;
+  href: string;
+}[] = [
   {
-    Icon: MessageCircle,
-    label: "WhatsApp",
-    value: "+44 7000 000000",
-    href: "https://wa.me/447000000000",
+    Icon: InstagramIcon,
+    label: "Instagram",
+    value: "@_niftyneedle_",
+    href: SOCIALS.instagram,
   },
   {
-    Icon: AtSign,
-    label: "Instagram",
-    value: "@niftyneedlebynimra",
-    href: "https://instagram.com",
+    Icon: FacebookIcon,
+    label: "Facebook",
+    value: "Nifty Needle by Nimra",
+    href: SOCIALS.facebook,
   },
   {
     Icon: Mail,
     label: "Email",
-    value: "niftyneedlebynimra@gmail.com",
-    href: "mailto:niftyneedlebynimra@gmail.com",
+    value: SOCIALS.email,
+    href: `mailto:${SOCIALS.email}`,
   },
 ];
 
@@ -89,11 +100,14 @@ export default function ContactPage() {
 
             {/* OpenStreetMap embed */}
             <div className="overflow-hidden rounded-2xl border border-border shadow-[var(--shadow-soft)]">
+              <div className="flex items-center gap-1.5 bg-surface px-4 py-2.5 text-sm font-medium text-foreground">
+                <span aria-hidden>📍</span> Based in Barcelona, Spain
+              </div>
               <iframe
-                title="Studio location"
+                title="Studio location — Barcelona, Spain"
                 className="h-64 w-full"
                 loading="lazy"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=-0.34,53.72,-0.28,53.76&layer=mapnik"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=2.10%2C41.34%2C2.24%2C41.44&layer=mapnik&marker=41.3888%2C2.159"
               />
             </div>
           </div>

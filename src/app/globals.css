@@ -40,7 +40,7 @@
 
   /* Typography */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-cormorant), ui-serif, Georgia, serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
 
   /* Radius */
   --radius-xl: 1.25rem;
@@ -59,19 +59,19 @@
 
 /* Dark theme overrides (.dark class toggled by the theme provider) */
 .dark {
-  --color-background: #0a1a2f;
-  --color-surface: #11243d;
-  --color-surface-muted: #182f4b;
-  --color-foreground: #e6eef8;
-  --color-muted: #92a6c0;
-  --color-border: #254059;
-  --color-primary: #7ea9d6;
-  --color-primary-foreground: #0a1a2f;
-  --color-accent: #d3a7a1;
-  --color-ring: #7ea9d6;
+  --color-background: #0b1826;
+  --color-surface: #122236;
+  --color-surface-muted: #1a2c42;
+  --color-foreground: #eaf1fa;
+  --color-muted: #9fb2c9;
+  --color-border: #253a52;
+  --color-primary: #86b0da;
+  --color-primary-foreground: #0b1826;
+  --color-accent: #e0b3ad;
+  --color-ring: #86b0da;
   /* Brand blue tokens tuned for legibility on dark navy */
-  --color-brown: #6f9fd0;
-  --color-brown-deep: #1f5896;
+  --color-brown: #7aa6d4;
+  --color-brown-deep: #23568f;
 }
 
 @keyframes float {

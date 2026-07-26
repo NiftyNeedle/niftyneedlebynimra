@@ -33,8 +33,12 @@ export function About() {
         <Reveal className="order-2 lg:order-1">
           <div className="relative">
             <div className="grid grid-cols-2 gap-4">
-              <div className="aspect-[3/4] rounded-3xl bg-[linear-gradient(135deg,#f3d7d2,#d3a7a1)] shadow-[var(--shadow-soft)]" />
-              <div className="mt-10 aspect-[3/4] rounded-3xl bg-[linear-gradient(135deg,#d6e0cb,#8fa57e)] shadow-[var(--shadow-soft)]" />
+              <div className="grid aspect-[3/4] place-items-center rounded-3xl bg-gradient-to-br from-pink/40 to-accent/25 text-6xl shadow-[var(--shadow-soft)]">
+                🧶
+              </div>
+              <div className="mt-10 grid aspect-[3/4] place-items-center rounded-3xl bg-gradient-to-br from-sage/40 to-sage-deep/25 text-6xl shadow-[var(--shadow-soft)]">
+                🌸
+              </div>
             </div>
             <div className="glass absolute -bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-2xl px-6 py-4 shadow-[var(--shadow-lift)]">
               <span className="text-3xl">🧶</span>

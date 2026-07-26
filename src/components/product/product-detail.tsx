@@ -371,7 +371,7 @@ export function ProductDetail({
           <div className="mt-6 grid grid-cols-3 gap-3 text-center text-xs text-muted">
             <div className="flex flex-col items-center gap-1 rounded-2xl bg-surface-muted/60 p-3">
               <Truck className="h-5 w-5 text-primary" />
-              Free shipping over $75
+              Tracked shipping
             </div>
             <div className="flex flex-col items-center gap-1 rounded-2xl bg-surface-muted/60 p-3">
               <ShieldCheck className="h-5 w-5 text-primary" />
@@ -435,8 +435,8 @@ export function ProductDetail({
           {tab === "Shipping" && (
             <p>
               Made to order within {productionDays}–{productionDays + 3} days,
-              then sent with tracking. Free shipping on orders over $75, and
-              every order is wrapped and packed with care.
+              then sent with tracking. Every order is wrapped and packed with
+              care.
             </p>
           )}
         </div>

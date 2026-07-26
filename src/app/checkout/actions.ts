@@ -9,8 +9,6 @@ export interface CheckoutState {
   error?: string;
 }
 
-const FREE_SHIP = 75;
-
 interface CartLine {
   name: string;
   quantity: number;
@@ -50,7 +48,7 @@ export async function startCheckout(
     0,
   );
   const method = String(formData.get("shipping") ?? "standard");
-  const shipping = subtotal >= FREE_SHIP ? 0 : method === "express" ? 16 : 6;
+  const shipping = method === "express" ? 16 : 6;
   const tax = Math.round(subtotal * 0.05 * 100) / 100;
   const total = Math.round((subtotal + shipping + tax) * 100) / 100;
 

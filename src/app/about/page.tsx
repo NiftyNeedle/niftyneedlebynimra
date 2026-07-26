@@ -33,8 +33,12 @@ export default function AboutPage() {
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <Reveal>
             <div className="grid grid-cols-2 gap-4">
-              <div className="aspect-[3/4] rounded-3xl bg-[linear-gradient(135deg,#f3d7d2,#d3a7a1)]" />
-              <div className="mt-10 aspect-[3/4] rounded-3xl bg-[linear-gradient(135deg,#d6e0cb,#8fa57e)]" />
+              <div className="grid aspect-[3/4] place-items-center rounded-3xl bg-gradient-to-br from-pink/40 to-accent/25 text-6xl shadow-[var(--shadow-soft)]">
+                🧶
+              </div>
+              <div className="mt-10 grid aspect-[3/4] place-items-center rounded-3xl bg-gradient-to-br from-sage/40 to-sage-deep/25 text-6xl shadow-[var(--shadow-soft)]">
+                🧺
+              </div>
             </div>
           </Reveal>
           <div>

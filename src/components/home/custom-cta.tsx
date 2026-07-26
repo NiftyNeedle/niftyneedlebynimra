@@ -7,7 +7,7 @@ export function CustomCta() {
     <section className="section-px mx-auto max-w-[90rem] py-24">
       <Reveal>
         <div className="relative overflow-hidden rounded-[2.5rem] border border-border bg-surface p-10 md:p-16">
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-1/2 bg-[linear-gradient(120deg,transparent,#f3d7d2_60%,#d3a7a1)] opacity-60" />
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-pink/25 via-pink/5 to-transparent" />
           <div className="relative max-w-xl">
             <span className="inline-flex items-center gap-2 rounded-full bg-surface-muted px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
               <Sparkles className="h-3.5 w-3.5 text-accent" />

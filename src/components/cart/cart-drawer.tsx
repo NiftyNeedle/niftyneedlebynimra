@@ -7,8 +7,6 @@ import { useStore } from "@/lib/store";
 import { ButtonLink } from "@/components/ui/button";
 import { useCurrency } from "@/components/currency/currency-provider";
 
-const FREE_SHIP_THRESHOLD = 75;
-
 export function CartDrawer() {
   const {
     cart,
@@ -20,9 +18,6 @@ export function CartDrawer() {
     cartCount,
   } = useStore();
   const { format } = useCurrency();
-
-  const remaining = Math.max(0, FREE_SHIP_THRESHOLD - cartSubtotal);
-  const progress = Math.min(100, (cartSubtotal / FREE_SHIP_THRESHOLD) * 100);
 
   return (
     <AnimatePresence>
@@ -76,31 +71,6 @@ export function CartDrawer() {
               </div>
             ) : (
               <>
-                {/* Free-shipping progress */}
-                <div className="border-b border-border px-6 py-4">
-                  <p className="text-sm text-muted">
-                    {remaining > 0 ? (
-                      <>
-                        You&apos;re{" "}
-                        <span className="font-semibold text-foreground">
-                          {format(remaining)}
-                        </span>{" "}
-                        away from free shipping!
-                      </>
-                    ) : (
-                      <span className="font-medium text-sage-deep">
-                        🎉 You&apos;ve unlocked free shipping!
-                      </span>
-                    )}
-                  </p>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted">
-                    <div
-                      className="h-full rounded-full bg-sage-deep transition-all duration-500"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-
                 <div className="flex-1 space-y-4 overflow-y-auto p-6">
                   {cart.map((item) => (
                     <div key={item.id} className="flex gap-4">

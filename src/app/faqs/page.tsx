@@ -15,7 +15,7 @@ const faqs: Faq[] = [
   },
   {
     q: "Do you ship internationally?",
-    a: "Yes! I'm happy to ship internationally with tracking. Shipping is calculated at checkout, and orders over $75 ship free.",
+    a: "Yes! I'm happy to ship internationally with tracking. Shipping is calculated at checkout based on your destination.",
   },
   {
     q: "Can I customise a product?",

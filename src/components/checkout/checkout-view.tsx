@@ -9,8 +9,6 @@ import { useToast } from "@/components/ui/toast";
 import { useCurrency } from "@/components/currency/currency-provider";
 import { startCheckout, type CheckoutState } from "@/app/checkout/actions";
 
-const FREE_SHIP = 75;
-
 const field =
   "w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring";
 
@@ -24,8 +22,7 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
     {},
   );
 
-  const shipping =
-    cartSubtotal >= FREE_SHIP ? 0 : shippingMethod === "express" ? 16 : 6;
+  const shipping = shippingMethod === "express" ? 16 : 6;
   const tax = Math.round(cartSubtotal * 0.05 * 100) / 100;
   const total = cartSubtotal + shipping + tax;
 
@@ -97,8 +94,8 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
             </h2>
             <div className="space-y-3">
               {[
-                { id: "standard", label: "Standard", eta: "7–12 days", cost: cartSubtotal >= FREE_SHIP ? 0 : 6 },
-                { id: "express", label: "Express", eta: "3–5 days", cost: cartSubtotal >= FREE_SHIP ? 0 : 16 },
+                { id: "standard", label: "Standard", eta: "7–12 days", cost: 6 },
+                { id: "express", label: "Express", eta: "3–5 days", cost: 16 },
               ].map((m) => (
                 <label
                   key={m.id}
@@ -124,9 +121,7 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
                       <span className="text-sm text-muted">{m.eta}</span>
                     </span>
                   </span>
-                  <span className="font-medium">
-                    {m.cost === 0 ? "Free" : format(m.cost)}
-                  </span>
+                  <span className="font-medium">{format(m.cost)}</span>
                 </label>
               ))}
             </div>
@@ -190,9 +185,7 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Shipping</dt>
-                <dd className="font-medium">
-                  {shipping === 0 ? "Free" : format(shipping)}
-                </dd>
+                <dd className="font-medium">{format(shipping)}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Tax</dt>
