@@ -44,7 +44,7 @@ export function ReviewsSection({
 
   useEffect(() => {
     if (state.ok) {
-      toast("Thank you for your review!");
+      toast("Thanks! Your review will appear once approved.");
       setOpen(false);
       setStars(5);
       router.refresh();

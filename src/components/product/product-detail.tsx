@@ -188,7 +188,7 @@ export function ProductDetail({
                   : "bg-accent/15 text-accent",
               )}
             >
-              {product.inStock ? "In stock" : "Made to order"}
+              {product.inStock ? "In stock" : "Out of stock"}
             </span>
           </div>
 
@@ -340,10 +340,13 @@ export function ProductDetail({
 
             <button
               onClick={handleAdd}
-              className="group flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]"
+              disabled={!product.inStock}
+              className="group flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-[var(--shadow-soft)]"
             >
               <ShoppingBag className="h-5 w-5" />
-              Add to cart · {format(unitPrice * quantity, product.currency)}
+              {product.inStock
+                ? `Add to cart · ${format(unitPrice * quantity, product.currency)}`
+                : "Out of stock"}
             </button>
 
             <button

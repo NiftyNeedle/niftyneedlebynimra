@@ -61,6 +61,11 @@ export function ProductCard({ product }: { product: Product }) {
               Customizable
             </span>
           )}
+          {!product.inStock && (
+            <span className="rounded-full bg-espresso/80 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-wider text-white">
+              Sold out
+            </span>
+          )}
         </div>
 
         <div className="absolute right-3 top-3 flex flex-col gap-2 opacity-0 transition-all duration-500 group-hover:opacity-100">
@@ -117,16 +122,22 @@ export function ProductCard({ product }: { product: Product }) {
               </span>
             )}
           </div>
-          <button
-            aria-label={`Add ${product.name} to cart`}
-            onClick={() => {
-              addToCart(product);
-              toast(`${product.name} added to cart`);
-            }}
-            className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-110"
-          >
-            <ShoppingBag className="h-4.5 w-4.5" />
-          </button>
+          {product.inStock ? (
+            <button
+              aria-label={`Add ${product.name} to cart`}
+              onClick={() => {
+                addToCart(product);
+                toast(`${product.name} added to cart`);
+              }}
+              className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-110"
+            >
+              <ShoppingBag className="h-4.5 w-4.5" />
+            </button>
+          ) : (
+            <span className="rounded-full bg-surface-muted px-3 py-1.5 text-xs font-medium text-muted">
+              Out of stock
+            </span>
+          )}
         </div>
       </div>
     </motion.article>

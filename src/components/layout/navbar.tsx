@@ -52,7 +52,7 @@ export function Navbar() {
     >
       {/* Announcement strip */}
       <div className="bg-brown-deep text-warm-white text-center text-xs tracking-wide py-2 px-4">
-        Handmade to order with love · Free shipping on orders over $75
+        Handcrafted to order with love.
       </div>
 
       <nav className="section-px mx-auto flex h-18 max-w-[90rem] items-center justify-between py-3">

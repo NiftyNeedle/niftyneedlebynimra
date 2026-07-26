@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   Sparkles,
+  Star,
   Tag,
   Users,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const links = [
   { href: "/admin/products", label: "Products", Icon: Box },
   { href: "/admin/orders", label: "Orders", Icon: ShoppingCart },
   { href: "/admin/custom-orders", label: "Custom Orders", Icon: Sparkles },
+  { href: "/admin/reviews", label: "Reviews", Icon: Star },
   { href: "/admin/customers", label: "Customers", Icon: Users },
   { href: "/admin/coupons", label: "Coupons", Icon: Tag },
   { href: "/admin/analytics", label: "Analytics", Icon: BarChart3 },

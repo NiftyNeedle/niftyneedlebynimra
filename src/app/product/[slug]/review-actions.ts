@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recomputeProductRating } from "@/lib/reviews-recompute";
 
 export interface ReviewState {
   ok?: boolean;
@@ -30,24 +31,11 @@ export async function submitReview(
       .insert({ product_id: productId, author, rating, body });
     if (error) return { error: error.message };
 
-    // Recompute this product's average rating + review count.
-    const { data: rows } = await admin
-      .from("reviews")
-      .select("rating")
-      .eq("product_id", productId);
-    const ratings = (rows ?? []).map((r) => r.rating as number);
-    const count = ratings.length;
-    const avg = count
-      ? Math.round((ratings.reduce((n, r) => n + r, 0) / count) * 10) / 10
-      : 5.0;
-    await admin
-      .from("products")
-      .update({ rating: avg, review_count: count })
-      .eq("id", productId);
+    // New reviews start pending (approved=false), so ratings only recompute
+    // once approved in the admin. This call keeps counts consistent.
+    await recomputeProductRating(productId);
 
     if (slug) revalidatePath(`/product/${slug}`);
-    revalidatePath("/shop");
-    revalidatePath("/");
     return { ok: true };
   } catch (e) {
     return {
