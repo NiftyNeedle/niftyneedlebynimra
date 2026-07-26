@@ -23,7 +23,7 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
-const siteUrl = "https://niftyneedle.example.com";
+const siteUrl = "https://niftyneedlebynimra.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

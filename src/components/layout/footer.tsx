@@ -2,7 +2,12 @@ import Link from "next/link";
 import { Mail } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { Logo } from "./logo";
-import { InstagramIcon, FacebookIcon, SOCIALS } from "@/components/ui/social-icons";
+import {
+  InstagramIcon,
+  FacebookIcon,
+  WhatsAppIcon,
+  SOCIALS,
+} from "@/components/ui/social-icons";
 
 const columns = [
   {
@@ -44,6 +49,7 @@ const socials: {
 }[] = [
   { label: "Instagram", href: SOCIALS.instagram, Icon: InstagramIcon },
   { label: "Facebook", href: SOCIALS.facebook, Icon: FacebookIcon },
+  { label: "WhatsApp", href: SOCIALS.whatsapp, Icon: WhatsAppIcon },
   { label: "Email", href: `mailto:${SOCIALS.email}`, Icon: Mail },
 ];
 

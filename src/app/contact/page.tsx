@@ -6,6 +6,7 @@ import { ContactForm } from "@/components/contact/contact-form";
 import {
   InstagramIcon,
   FacebookIcon,
+  WhatsAppIcon,
   SOCIALS,
 } from "@/components/ui/social-icons";
 
@@ -21,6 +22,12 @@ const channels: {
   value: string;
   href: string;
 }[] = [
+  {
+    Icon: WhatsAppIcon,
+    label: "WhatsApp",
+    value: "+34 641 43 26 54",
+    href: SOCIALS.whatsapp,
+  },
   {
     Icon: InstagramIcon,
     label: "Instagram",

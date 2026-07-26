@@ -13,6 +13,6 @@ export function getStripe(): Stripe | null {
 
 export function siteUrl() {
   return (
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://niftyneedlebynimra.vercel.app"
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://niftyneedlebynimra.com"
   );
 }
