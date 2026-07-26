@@ -144,6 +144,8 @@ export async function startCheckout(
       mode: "payment",
       line_items,
       customer_email: email,
+      // 30 minutes is the shortest Stripe allows before the session expires.
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       success_url: `${siteUrl()}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl()}/cart`,
       metadata: {
