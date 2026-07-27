@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { products } from "@/lib/data";
 import { getPosts } from "@/lib/blog";
+import { getPatterns } from "@/lib/patterns";
 
 const baseUrl = "https://niftyneedlebynimra.com";
 
@@ -8,6 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     "",
     "/shop",
+    "/patterns",
     "/custom",
     "/about",
     "/contact",
@@ -37,5 +39,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...productRoutes, ...blogRoutes];
+  const patternRoutes = (await getPatterns()).map((p) => ({
+    url: `${baseUrl}/patterns/${p.slug}`,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...productRoutes, ...blogRoutes, ...patternRoutes];
 }

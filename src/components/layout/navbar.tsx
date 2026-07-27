@@ -14,6 +14,7 @@ import { ButtonLink } from "@/components/ui/button";
 
 const primaryLinks = [
   { label: "Shop", href: "/shop" },
+  { label: "Patterns", href: "/patterns" },
   { label: "Custom Orders", href: "/custom" },
   { label: "Track Order", href: "/track" },
   { label: "About", href: "/about" },

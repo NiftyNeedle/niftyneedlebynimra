@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Box,
+  FileText,
   LayoutDashboard,
   Mail,
   Newspaper,
@@ -21,6 +22,7 @@ import { logout } from "@/app/admin/login/actions";
 const links = [
   { href: "/admin", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", Icon: Box },
+  { href: "/admin/patterns", label: "Patterns", Icon: FileText },
   { href: "/admin/orders", label: "Orders", Icon: ShoppingCart },
   { href: "/admin/custom-orders", label: "Custom Orders", Icon: Sparkles },
   { href: "/admin/reviews", label: "Reviews", Icon: Star },

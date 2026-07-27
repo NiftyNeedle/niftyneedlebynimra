@@ -90,6 +90,59 @@ interface CustomEmail {
   description?: string | null;
 }
 
+interface PatternEmail {
+  to: string;
+  title: string;
+  paid: boolean;
+  amount?: number;
+  attachment?: { filename: string; content: Buffer };
+  downloadUrl?: string | null;
+}
+
+/** Sends the pattern PDF to a customer (attached + optional backup link). */
+export async function sendPatternEmail(p: PatternEmail) {
+  if (!resend || !p.to) return;
+
+  const linkBlock = p.downloadUrl
+    ? `<p>If the attachment doesn't open, you can also
+        <a href="${p.downloadUrl}" style="color:#00356b">download your pattern here</a>
+        (link valid for 7 days).</p>`
+    : "";
+
+  const html = shell("Your crochet pattern is here! 🧶", `
+    <p>Thank you${p.paid ? " for your purchase" : ""}! Your pattern
+    <strong>${p.title}</strong> is attached to this email as a PDF.</p>
+    ${linkBlock}
+    <p>Happy crocheting — I'd love to see what you make. Tag
+    <strong>@_niftyneedle_</strong> on Instagram!</p>
+    <p>With love,<br/>Nimra</p>`);
+
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: p.to,
+      subject: `Your Nifty Needle pattern: ${p.title}`,
+      html,
+      ...(p.attachment
+        ? { attachments: [{ filename: p.attachment.filename, content: p.attachment.content }] }
+        : {}),
+    });
+  } catch (e) {
+    console.error("[email] pattern send failed:", e);
+  }
+
+  // Owner alert (paid sales only — free downloads would be noisy).
+  if (p.paid) {
+    await send(
+      OWNER,
+      `Pattern sold: ${p.title} — ${money(p.amount ?? 0)}`,
+      shell("Pattern sale 🎉", `
+        <p><strong>${p.title}</strong> was purchased by ${p.to}.</p>
+        <p>Amount: ${money(p.amount ?? 0)}</p>`),
+    );
+  }
+}
+
 export async function notifyNewCustomOrder(c: CustomEmail) {
   // Customer confirmation
   await send(
