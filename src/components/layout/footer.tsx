@@ -100,13 +100,8 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 text-sm text-muted sm:flex-row">
+        <div className="mt-14 border-t border-border pt-8 text-center text-sm text-muted">
           <p>© {new Date().getFullYear()} Nifty Needle. All rights reserved.</p>
-          <p className="flex items-center gap-1.5">
-            Handmade with
-            <span className="text-accent">♥</span>
-by hand.
-          </p>
         </div>
       </div>
     </footer>
