@@ -54,15 +54,26 @@ async function loadPattern(
   return (data as PatternFull) ?? null;
 }
 
-/** Emails a FREE pattern to whoever requested it. */
+/** Emails a FREE pattern to whoever requested it — once per email.
+ *  Returns `already: true` if that address already received this pattern. */
 export async function deliverFreePattern(
   patternId: string,
   email: string,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; already?: boolean; error?: string }> {
   const admin = createAdminClient();
   const pattern = await loadPattern(admin, patternId);
   if (!pattern) return { ok: false, error: "Pattern not found." };
   if (!pattern.is_free) return { ok: false, error: "This pattern isn't free." };
+
+  // Claim this (pattern, email) pair first. A duplicate means we've
+  // already sent it → don't send again.
+  const { error: claimError } = await admin
+    .from("pattern_downloads")
+    .insert({ pattern_id: patternId, email });
+  if (claimError) {
+    if (claimError.code === "23505") return { ok: true, already: true };
+    return { ok: false, error: claimError.message };
+  }
 
   const { attachment, downloadUrl } = await buildPdfDelivery(
     admin,

@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { CurrencySwitcher } from "@/components/currency/currency-switcher";
-import { ButtonLink } from "@/components/ui/button";
 
 const primaryLinks = [
   { label: "Shop", href: "/shop" },
@@ -60,7 +59,7 @@ export function Navbar() {
         <Logo />
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-0.5 lg:flex">
+        <div className="hidden items-center gap-0.5 xl:flex">
           <div
             className="relative"
             onMouseEnter={() => setShopOpen(true)}
@@ -145,18 +144,10 @@ export function Navbar() {
             )}
           </button>
 
-          <ButtonLink
-            href="/shop"
-            size="sm"
-            className="ml-1 hidden whitespace-nowrap xl:inline-flex"
-          >
-            Shop Now
-          </ButtonLink>
-
           <button
             aria-label="Open menu"
             onClick={() => setMobileOpen(true)}
-            className="grid h-10 w-10 place-items-center rounded-full text-foreground transition-colors hover:bg-surface-muted lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-full text-foreground transition-colors hover:bg-surface-muted xl:hidden"
           >
             <Menu className="h-6 w-6" />
           </button>
@@ -172,14 +163,14 @@ export function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 z-50 bg-espresso/40 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-50 bg-espresso/40 backdrop-blur-sm xl:hidden"
             />
             <motion.aside
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
-              className="fixed right-0 top-0 z-50 flex h-full w-[85%] max-w-sm flex-col bg-surface p-6 shadow-[var(--shadow-lift)] lg:hidden"
+              className="fixed right-0 top-0 z-50 flex h-full w-[85%] max-w-sm flex-col bg-surface p-6 shadow-[var(--shadow-lift)] xl:hidden"
             >
               <div className="mb-8 flex items-center justify-between">
                 <Logo />
@@ -212,25 +203,17 @@ export function Navbar() {
                 ))}
               </div>
 
-              <div className="mt-auto flex items-center justify-between border-t border-border pt-6">
-                <div className="flex gap-2">
-                  <Link
-                    href="/wishlist"
-                    onClick={() => setMobileOpen(false)}
-                    className="grid h-10 w-10 place-items-center rounded-full border border-border"
-                  >
-                    <Heart className="h-5 w-5" />
-                  </Link>
-                  <ThemeToggle />
-                  <CurrencySwitcher />
-                </div>
-                <ButtonLink
-                  href="/shop"
+              <div className="mt-auto flex items-center gap-2 border-t border-border pt-6">
+                <Link
+                  href="/wishlist"
                   onClick={() => setMobileOpen(false)}
-                  size="sm"
+                  aria-label="Wishlist"
+                  className="grid h-10 w-10 place-items-center rounded-full border border-border"
                 >
-                  Shop Now
-                </ButtonLink>
+                  <Heart className="h-5 w-5" />
+                </Link>
+                <ThemeToggle />
+                <CurrencySwitcher />
               </div>
             </motion.aside>
           </>

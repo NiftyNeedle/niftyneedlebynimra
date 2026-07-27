@@ -21,10 +21,13 @@ export function FreePatternForm({
     {},
   );
   const [sent, setSent] = useState(false);
+  const [already, setAlready] = useState(false);
 
   useEffect(() => {
-    if (state.ok) setSent(true);
-    else if (state.error) toast(state.error, "info");
+    if (state.ok) {
+      setSent(true);
+      setAlready(Boolean(state.already));
+    } else if (state.error) toast(state.error, "info");
   }, [state, toast]);
 
   if (sent) {
@@ -34,8 +37,18 @@ export function FreePatternForm({
           <Check className="h-4 w-4" />
         </span>
         <p className="text-sm">
-          Sent! Check your inbox — <strong>{title}</strong> is on its way (do
-          peek in spam just in case).
+          {already ? (
+            <>
+              <strong>{title}</strong> is already in your inbox — we sent it to
+              this email before. Check your mail (and the spam folder just in
+              case).
+            </>
+          ) : (
+            <>
+              Sent! Check your inbox — <strong>{title}</strong> is on its way
+              (do peek in spam just in case).
+            </>
+          )}
         </p>
       </div>
     );

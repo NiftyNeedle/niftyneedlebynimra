@@ -54,3 +54,15 @@ create index if not exists pattern_sales_created_idx
 
 -- RLS on, no policies: only server actions (service key) touch this.
 alter table public.pattern_sales enable row level security;
+
+-- Tracks who has already been emailed each FREE pattern, so the same
+-- pattern is only ever sent once per email address.
+create table if not exists public.pattern_downloads (
+  id          uuid primary key default gen_random_uuid(),
+  pattern_id  uuid references public.patterns(id) on delete cascade,
+  email       text not null,
+  created_at  timestamptz not null default now(),
+  unique (pattern_id, email)
+);
+
+alter table public.pattern_downloads enable row level security;

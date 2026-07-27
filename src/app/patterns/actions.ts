@@ -7,6 +7,7 @@ import { deliverFreePattern } from "@/lib/patterns-fulfill";
 
 export interface FreePatternState {
   ok?: boolean;
+  already?: boolean;
   error?: string;
 }
 
@@ -26,7 +27,7 @@ export async function requestFreePattern(
   try {
     const res = await deliverFreePattern(patternId, email);
     if (!res.ok) return { error: res.error ?? "Couldn't send the pattern." };
-    return { ok: true };
+    return { ok: true, already: res.already };
   } catch {
     return { error: "Couldn't send the pattern. Please try again." };
   }
