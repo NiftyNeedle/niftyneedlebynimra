@@ -4,7 +4,7 @@ import { FileText, Ruler, Sparkles } from "lucide-react";
 import { getPatternBySlug, patternSwatch } from "@/lib/patterns";
 import { PageHeader } from "@/components/ui/page-header";
 import { FreePatternForm } from "@/components/patterns/free-pattern-form";
-import { BuyPatternButton } from "@/components/patterns/buy-pattern-button";
+import { AddPatternToCart } from "@/components/patterns/add-pattern-to-cart";
 
 export const revalidate = 0;
 
@@ -102,10 +102,14 @@ export default async function PatternPage({
               {pattern.isFree ? (
                 <FreePatternForm patternId={pattern.id} title={pattern.title} />
               ) : (
-                <BuyPatternButton
-                  patternId={pattern.id}
-                  slug={pattern.slug}
-                  price={pattern.price}
+                <AddPatternToCart
+                  pattern={{
+                    id: pattern.id,
+                    slug: pattern.slug,
+                    title: pattern.title,
+                    price: pattern.price,
+                    imageUrl: pattern.imageUrl,
+                  }}
                 />
               )}
             </div>

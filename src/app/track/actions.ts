@@ -26,6 +26,7 @@ export async function lookupOrder(
       .select("order_number,status,created_at,tracking,total,currency,items")
       .eq("order_number", num)
       .neq("status", "Pending payment")
+      .eq("digital_only", false)
       .maybeSingle();
     return (data as TrackedOrder) ?? null;
   } catch {

@@ -89,50 +89,54 @@ export async function deliverFreePattern(
   return { ok: true };
 }
 
-interface CheckoutSessionLike {
-  id: string;
-  customer_email?: string | null;
-  customer_details?: { email?: string | null } | null;
-  amount_total?: number | null;
-  metadata?: { pattern_id?: string } | null;
+interface OrderPatternItem {
+  pattern_id?: string;
+  productId?: string;
 }
 
-/** Fulfils a paid pattern purchase: records the sale (once) and emails
- *  the PDF. Idempotent — the unique stripe_session_id prevents a second
- *  email if both the webhook and the success page call this. */
-export async function fulfillPatternPurchase(
-  session: CheckoutSessionLike,
-): Promise<void> {
-  const patternId = session.metadata?.pattern_id;
-  const email =
-    session.customer_details?.email ?? session.customer_email ?? null;
-  if (!patternId || !email) return;
-
+/** Emails every paid pattern in an order and records each sale. Idempotent:
+ *  the unique (order_ref, pattern_id) index means a pattern is only ever
+ *  emailed once per order, even if the webhook and success page both run. */
+export async function fulfillOrderPatterns({
+  ref,
+  email,
+  items,
+}: {
+  ref: string;
+  email: string | null;
+  items: OrderPatternItem[];
+}): Promise<void> {
+  if (!email) return;
   const admin = createAdminClient();
-  const pattern = await loadPattern(admin, patternId);
-  const amount = (session.amount_total ?? 0) / 100;
 
-  // Claim this session first — if it already exists, we've fulfilled it.
-  const { error: claimError } = await admin.from("pattern_sales").insert({
-    stripe_session_id: session.id,
-    pattern_id: patternId,
-    pattern_title: pattern?.title ?? null,
-    email,
-    amount,
-  });
-  if (claimError) return; // 23505 duplicate → already delivered
+  for (const it of items) {
+    const patternId = it.pattern_id ?? it.productId;
+    if (!patternId) continue;
 
-  if (!pattern) return;
-  const { attachment, downloadUrl } = await buildPdfDelivery(
-    admin,
-    pattern.pdf_path,
-  );
-  await sendPatternEmail({
-    to: email,
-    title: pattern.title,
-    paid: true,
-    amount,
-    attachment,
-    downloadUrl,
-  });
+    const pattern = await loadPattern(admin, patternId);
+    if (!pattern) continue;
+
+    // Claim (order, pattern) first — a duplicate means we've already sent it.
+    const { error: claimError } = await admin.from("pattern_sales").insert({
+      order_ref: ref,
+      pattern_id: patternId,
+      pattern_title: pattern.title,
+      email,
+      amount: pattern.price,
+    });
+    if (claimError) continue; // 23505 duplicate → already delivered
+
+    const { attachment, downloadUrl } = await buildPdfDelivery(
+      admin,
+      pattern.pdf_path,
+    );
+    await sendPatternEmail({
+      to: email,
+      title: pattern.title,
+      paid: true,
+      amount: pattern.price,
+      attachment,
+      downloadUrl,
+    });
+  }
 }

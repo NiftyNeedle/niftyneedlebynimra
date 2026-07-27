@@ -1,15 +1,69 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyNewOrder } from "@/lib/email";
+import { fulfillOrderPatterns } from "@/lib/patterns-fulfill";
+
+interface OrderItem {
+  name: string;
+  quantity: number;
+  kind?: string;
+  pattern_id?: string;
+  productId?: string;
+}
+
+interface OrderRow {
+  id: string;
+  order_number: string;
+  status: string;
+  name: string | null;
+  email: string | null;
+  total: number | string;
+  digital_only?: boolean;
+  items: OrderItem[] | null;
+}
+
+export interface FinalizeResult {
+  orderNumber: string;
+  digitalOnly: boolean;
+  email: string | null;
+}
 
 /**
- * Marks a pending order as paid ("Order Received") and sends the
- * confirmation email — exactly once. Safe to call multiple times
- * (webhook + success page): only the first call (while still pending)
- * does anything.
+ * Runs everything that happens once an order is paid:
+ *  - emails the PDF for any pattern items (always),
+ *  - sends the order confirmation ONLY when the order has physical items
+ *    (a pattern-only order gets just the pattern email, no confirmation).
+ */
+export async function fulfillOrderRow(order: OrderRow): Promise<void> {
+  const items = order.items ?? [];
+  const patternItems = items.filter((i) => i.kind === "pattern");
+
+  if (patternItems.length) {
+    await fulfillOrderPatterns({
+      ref: order.id,
+      email: order.email,
+      items: patternItems,
+    });
+  }
+
+  if (!order.digital_only) {
+    await notifyNewOrder({
+      orderNumber: order.order_number,
+      name: order.name ?? "",
+      email: order.email ?? "",
+      total: Number(order.total),
+      items: items.map((i) => ({ name: i.name, quantity: i.quantity })),
+    });
+  }
+}
+
+/**
+ * Marks a pending order as paid ("Order Received") and fulfils it —
+ * exactly once. Safe to call multiple times (webhook + success page):
+ * only the first call (while still pending) delivers anything.
  */
 export async function finalizeOrderById(
   orderId: string | undefined | null,
-): Promise<string | null> {
+): Promise<FinalizeResult | null> {
   if (!orderId) return null;
   const admin = createAdminClient();
 
@@ -19,26 +73,21 @@ export async function finalizeOrderById(
     .eq("id", orderId)
     .maybeSingle();
   if (!data) return null;
+  const order = data as OrderRow;
 
-  if (data.status === "Pending payment") {
+  if (order.status === "Pending payment") {
     await admin
       .from("orders")
       .update({ status: "Order Received" })
       .eq("id", orderId);
-
-    await notifyNewOrder({
-      orderNumber: data.order_number,
-      name: data.name ?? "",
-      email: data.email ?? "",
-      total: Number(data.total),
-      items: (data.items ?? []).map((i: { name: string; quantity: number }) => ({
-        name: i.name,
-        quantity: i.quantity,
-      })),
-    });
+    await fulfillOrderRow(order);
   }
 
-  return data.order_number as string;
+  return {
+    orderNumber: order.order_number,
+    digitalOnly: Boolean(order.digital_only),
+    email: order.email,
+  };
 }
 
 /** Deletes an order only if it's still awaiting payment (abandoned checkout). */

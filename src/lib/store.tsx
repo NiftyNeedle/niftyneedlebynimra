@@ -25,6 +25,16 @@ export interface CartItem {
   swatch: string;
   quantity: number;
   options?: Record<string, string>;
+  kind?: "pattern"; // absent = physical product
+}
+
+/** Minimal shape needed to add a digital pattern to the cart. */
+export interface CartablePattern {
+  id: string;
+  slug: string;
+  title: string;
+  price: number;
+  imageUrl?: string;
 }
 
 interface StoreState {
@@ -36,6 +46,7 @@ interface StoreState {
     product: Product,
     opts?: { quantity?: number; options?: Record<string, string> },
   ) => void;
+  addPatternToCart: (pattern: CartablePattern) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -116,6 +127,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [setCart],
   );
 
+  const addPatternToCart: StoreState["addPatternToCart"] = useCallback(
+    (pattern) => {
+      const configId = "pattern:" + pattern.id;
+      setCart((prev) => {
+        // A digital pattern is bought once — never increment quantity.
+        if (prev.some((i) => i.id === configId)) return prev;
+        return [
+          ...prev,
+          {
+            id: configId,
+            productId: pattern.id,
+            slug: pattern.slug,
+            name: pattern.title,
+            price: pattern.price,
+            swatch:
+              pattern.imageUrl ||
+              "linear-gradient(135deg,#dde4ee,#8fa57e)",
+            quantity: 1,
+            kind: "pattern",
+          },
+        ];
+      });
+      setCartOpen(true);
+    },
+    [setCart],
+  );
+
   const removeFromCart = useCallback(
     (id: string) => setCart((prev) => prev.filter((i) => i.id !== id)),
     [setCart],
@@ -163,6 +201,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     cartOpen,
     setCartOpen,
     addToCart,
+    addPatternToCart,
     removeFromCart,
     updateQuantity,
     clearCart,

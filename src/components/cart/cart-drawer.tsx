@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { FileText, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { ButtonLink } from "@/components/ui/button";
 import { useCurrency } from "@/components/currency/currency-provider";
@@ -72,18 +72,30 @@ export function CartDrawer() {
             ) : (
               <>
                 <div className="flex-1 space-y-4 overflow-y-auto p-6">
-                  {cart.map((item) => (
+                  {cart.map((item) => {
+                    const isPattern = item.kind === "pattern";
+                    const href = isPattern
+                      ? `/patterns/${item.slug}`
+                      : `/product/${item.slug}`;
+                    const imgStyle = item.swatch?.startsWith("http")
+                      ? {
+                          backgroundImage: `url(${item.swatch})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }
+                      : { background: item.swatch };
+                    return (
                     <div key={item.id} className="flex gap-4">
                       <Link
-                        href={`/product/${item.slug}`}
+                        href={href}
                         onClick={() => setCartOpen(false)}
                         className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl"
-                        style={{ background: item.swatch }}
+                        style={imgStyle}
                       />
                       <div className="flex flex-1 flex-col">
                         <div className="flex items-start justify-between gap-2">
                           <Link
-                            href={`/product/${item.slug}`}
+                            href={href}
                             onClick={() => setCartOpen(false)}
                             className="font-serif text-base text-foreground hover:underline"
                           >
@@ -97,44 +109,56 @@ export function CartDrawer() {
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
-                        {item.options && (
-                          <p className="mt-0.5 text-xs text-muted">
-                            {Object.entries(item.options)
-                              .map(([k, v]) => `${k}: ${v}`)
-                              .join(" · ")}
+                        {isPattern ? (
+                          <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
+                            <FileText className="h-3 w-3" />
+                            Digital PDF
                           </p>
+                        ) : (
+                          item.options && (
+                            <p className="mt-0.5 text-xs text-muted">
+                              {Object.entries(item.options)
+                                .map(([k, v]) => `${k}: ${v}`)
+                                .join(" · ")}
+                            </p>
+                          )
                         )}
                         <div className="mt-auto flex items-center justify-between pt-2">
-                          <div className="flex items-center gap-2 rounded-full border border-border">
-                            <button
-                              aria-label="Decrease quantity"
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity - 1)
-                              }
-                              className="grid h-7 w-7 place-items-center rounded-full hover:bg-surface-muted"
-                            >
-                              <Minus className="h-3.5 w-3.5" />
-                            </button>
-                            <span className="w-5 text-center text-sm">
-                              {item.quantity}
-                            </span>
-                            <button
-                              aria-label="Increase quantity"
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 1)
-                              }
-                              className="grid h-7 w-7 place-items-center rounded-full hover:bg-surface-muted"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
+                          {isPattern ? (
+                            <span className="text-xs text-muted">Qty 1</span>
+                          ) : (
+                            <div className="flex items-center gap-2 rounded-full border border-border">
+                              <button
+                                aria-label="Decrease quantity"
+                                onClick={() =>
+                                  updateQuantity(item.id, item.quantity - 1)
+                                }
+                                className="grid h-7 w-7 place-items-center rounded-full hover:bg-surface-muted"
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="w-5 text-center text-sm">
+                                {item.quantity}
+                              </span>
+                              <button
+                                aria-label="Increase quantity"
+                                onClick={() =>
+                                  updateQuantity(item.id, item.quantity + 1)
+                                }
+                                className="grid h-7 w-7 place-items-center rounded-full hover:bg-surface-muted"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          )}
                           <span className="font-semibold text-foreground">
                             {format(item.price * item.quantity)}
                           </span>
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <footer className="border-t border-border p-6">

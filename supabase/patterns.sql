@@ -37,18 +37,21 @@ drop policy if exists "patterns public read" on public.patterns;
 create policy "patterns public read" on public.patterns
   for select using (published = true);
 
--- One row per completed pattern purchase. Doubles as (a) your sales record
--- and (b) an idempotency guard so a buyer is never emailed twice.
+-- One row per pattern sold. Doubles as (a) your sales record and (b) an
+-- idempotency guard (unique per order+pattern) so a buyer is never emailed
+-- twice. order_ref is the order the pattern was bought in.
 create table if not exists public.pattern_sales (
-  id                 uuid primary key default gen_random_uuid(),
-  stripe_session_id  text unique not null,
-  pattern_id         uuid references public.patterns(id) on delete set null,
-  pattern_title      text,
-  email              text,
-  amount             numeric(10,2) not null default 0,
-  created_at         timestamptz not null default now()
+  id            uuid primary key default gen_random_uuid(),
+  order_ref     text,
+  pattern_id    uuid references public.patterns(id) on delete set null,
+  pattern_title text,
+  email         text,
+  amount        numeric(10,2) not null default 0,
+  created_at    timestamptz not null default now()
 );
 
+create unique index if not exists pattern_sales_order_pattern_idx
+  on public.pattern_sales (order_ref, pattern_id);
 create index if not exists pattern_sales_created_idx
   on public.pattern_sales (created_at desc);
 

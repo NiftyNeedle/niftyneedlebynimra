@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, siteUrl } from "@/lib/stripe";
-import { notifyNewOrder } from "@/lib/email";
+import { fulfillOrderRow } from "@/lib/orders-finalize";
 
 export interface CheckoutState {
   error?: string;
@@ -16,6 +16,8 @@ interface CartLine {
   slug?: string;
   swatch?: string;
   options?: Record<string, string>;
+  kind?: string;
+  productId?: string;
 }
 
 function str(v: FormDataEntryValue | null) {
@@ -42,13 +44,17 @@ export async function startCheckout(
   const email = String(formData.get("email") ?? "").trim();
   if (!email) return { error: "An email address is required." };
 
+  const hasPhysical = items.some((i) => i.kind !== "pattern");
+  const digitalOnly = !hasPhysical;
+
   // Recompute money on the server — never trust client totals.
   const subtotal = items.reduce(
     (n, i) => n + (Number(i.price) || 0) * (Number(i.quantity) || 0),
     0,
   );
   const method = String(formData.get("shipping") ?? "standard");
-  const shipping = method === "express" ? 16 : 6;
+  // Digital patterns never ship → no shipping charge for pattern-only orders.
+  const shipping = hasPhysical ? (method === "express" ? 16 : 6) : 0;
   const tax = Math.round(subtotal * 0.05 * 100) / 100;
   const total = Math.round((subtotal + shipping + tax) * 100) / 100;
 
@@ -59,6 +65,8 @@ export async function startCheckout(
     slug: i.slug ?? null,
     swatch: i.swatch ?? null,
     options: i.options ?? null,
+    kind: i.kind === "pattern" ? "pattern" : null,
+    pattern_id: i.kind === "pattern" ? i.productId ?? null : null,
   }));
 
   const customer = {
@@ -70,13 +78,14 @@ export async function startCheckout(
     postal_code: str(formData.get("postal_code")),
     country: str(formData.get("country")),
     state: str(formData.get("state")),
-    shipping_method: method,
+    shipping_method: hasPhysical ? method : "digital",
     items: cleanItems,
     subtotal,
     shipping,
     tax,
     total,
     currency: "USD",
+    digital_only: digitalOnly,
   };
 
   const admin = createAdminClient();
@@ -87,17 +96,11 @@ export async function startCheckout(
     const { data, error } = await admin
       .from("orders")
       .insert({ status: "Order Received", ...customer })
-      .select("order_number")
+      .select("*")
       .single();
     if (error) return { error: error.message };
 
-    await notifyNewOrder({
-      orderNumber: data.order_number as string,
-      name,
-      email,
-      total,
-      items: cleanItems.map((i) => ({ name: i.name, quantity: i.quantity })),
-    });
+    await fulfillOrderRow(data);
     redirect(`/checkout/success?order=${data.order_number}`);
   }
 
@@ -115,7 +118,10 @@ export async function startCheckout(
       currency: "usd",
       unit_amount: Math.round(i.price * 100),
       product_data: {
-        name: i.name + (i.options ? ` (${Object.values(i.options).join(", ")})` : ""),
+        name:
+          i.name +
+          (i.kind === "pattern" ? " (PDF pattern)" : "") +
+          (i.options ? ` (${Object.values(i.options).join(", ")})` : ""),
       },
     },
   }));

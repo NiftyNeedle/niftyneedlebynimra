@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Minus, Plus, Tag, Trash2 } from "lucide-react";
+import { FileText, Minus, Plus, Tag, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { ButtonLink } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -19,7 +19,8 @@ export function CartView() {
   const [discount, setDiscount] = useState(0);
   const [applying, startApply] = useTransition();
 
-  const shipping = cartSubtotal === 0 ? 0 : SHIP_COST;
+  const hasPhysical = cart.some((i) => i.kind !== "pattern");
+  const shipping = hasPhysical ? SHIP_COST : 0;
   const discountAmount = cartSubtotal * discount;
   const tax = (cartSubtotal - discountAmount) * 0.05;
   const total = cartSubtotal - discountAmount + shipping + tax;
@@ -62,31 +63,50 @@ export function CartView() {
       <div className="grid gap-10 lg:grid-cols-[1fr_22rem]">
         {/* Items */}
         <div className="space-y-4">
-          {cart.map((item) => (
+          {cart.map((item) => {
+            const isPattern = item.kind === "pattern";
+            const href = isPattern
+              ? `/patterns/${item.slug}`
+              : `/product/${item.slug}`;
+            const imgStyle = item.swatch?.startsWith("http")
+              ? {
+                  backgroundImage: `url(${item.swatch})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : { background: item.swatch };
+            return (
             <div
               key={item.id}
               className="flex gap-5 rounded-3xl border border-border bg-surface p-4 shadow-[var(--shadow-soft)]"
             >
               <Link
-                href={`/product/${item.slug}`}
+                href={href}
                 className="h-28 w-28 shrink-0 overflow-hidden rounded-2xl"
-                style={{ background: item.swatch }}
+                style={imgStyle}
               />
               <div className="flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <Link
-                      href={`/product/${item.slug}`}
+                      href={href}
                       className="font-serif text-xl text-foreground hover:underline"
                     >
                       {item.name}
                     </Link>
-                    {item.options && (
-                      <p className="mt-1 text-sm text-muted">
-                        {Object.entries(item.options)
-                          .map(([k, v]) => `${k}: ${v}`)
-                          .join(" · ")}
+                    {isPattern ? (
+                      <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+                        <FileText className="h-3.5 w-3.5" />
+                        Digital PDF · emailed to you
                       </p>
+                    ) : (
+                      item.options && (
+                        <p className="mt-1 text-sm text-muted">
+                          {Object.entries(item.options)
+                            .map(([k, v]) => `${k}: ${v}`)
+                            .join(" · ")}
+                        </p>
+                      )
                     )}
                   </div>
                   <button
@@ -98,32 +118,39 @@ export function CartView() {
                   </button>
                 </div>
                 <div className="mt-auto flex items-center justify-between pt-4">
-                  <div className="flex items-center gap-2 rounded-full border border-border p-1">
-                    <button
-                      aria-label="Decrease quantity"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-muted"
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="w-6 text-center text-sm">
-                      {item.quantity}
+                  {isPattern ? (
+                    <span className="rounded-full bg-surface-muted px-3 py-1.5 text-xs font-medium text-muted">
+                      Qty 1
                     </span>
-                    <button
-                      aria-label="Increase quantity"
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-muted"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-2 rounded-full border border-border p-1">
+                      <button
+                        aria-label="Decrease quantity"
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-muted"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="w-6 text-center text-sm">
+                        {item.quantity}
+                      </span>
+                      <button
+                        aria-label="Increase quantity"
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-muted"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                   <span className="font-serif text-xl font-semibold text-foreground">
                     {format(item.price * item.quantity)}
                   </span>
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
           <Link
             href="/shop"
             className="inline-block text-sm font-medium text-accent hover:underline"

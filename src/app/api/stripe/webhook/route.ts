@@ -1,6 +1,5 @@
 import { getStripe } from "@/lib/stripe";
 import { finalizeOrderById, cancelPendingOrder } from "@/lib/orders-finalize";
-import { fulfillPatternPurchase } from "@/lib/patterns-fulfill";
 
 // Stripe sends payment confirmations here (configure in the Stripe dashboard).
 export async function POST(req: Request) {
@@ -28,18 +27,10 @@ export async function POST(req: Request) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as {
-      id: string;
-      customer_email?: string | null;
-      customer_details?: { email?: string | null } | null;
-      amount_total?: number | null;
-      metadata?: { kind?: string; order_id?: string; pattern_id?: string } | null;
+      metadata?: { order_id?: string } | null;
     };
-    if (session.metadata?.kind === "pattern") {
-      // Digital pattern → email the PDF (no order record, no confirmation).
-      await fulfillPatternPurchase(session);
-    } else {
-      await finalizeOrderById(session.metadata?.order_id);
-    }
+    // Emails any pattern PDFs and sends the order confirmation as needed.
+    await finalizeOrderById(session.metadata?.order_id);
   } else if (event.type === "checkout.session.expired") {
     // Customer abandoned payment → remove the unpaid physical order (if any).
     const session = event.data.object as { metadata?: { order_id?: string } };

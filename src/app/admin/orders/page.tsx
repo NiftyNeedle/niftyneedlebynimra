@@ -11,6 +11,7 @@ export default async function AdminOrdersPage() {
       .from("orders")
       .select("*")
       .neq("status", "Pending payment")
+      .eq("digital_only", false)
       .order("created_at", { ascending: false });
     orders = (data as AdminOrder[]) ?? [];
   } catch {

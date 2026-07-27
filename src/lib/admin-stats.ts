@@ -48,6 +48,7 @@ interface OrderRow {
   total: number;
   status: string;
   created_at: string;
+  digital_only?: boolean;
   items: { name: string; quantity: number }[] | null;
 }
 
@@ -66,6 +67,7 @@ export async function getCustomers(): Promise<CustomerRow[]> {
       .from("orders")
       .select("name,email,total,status,created_at")
       .neq("status", "Pending payment")
+      .eq("digital_only", false)
       .order("created_at", { ascending: false });
     const rows = (data as
       | { name: string | null; email: string | null; total: number; created_at: string }[]
@@ -101,7 +103,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     const [ordersRes, productsRes, customRes, reviewsRes] = await Promise.all([
       admin
         .from("orders")
-        .select("order_number,name,total,status,created_at,items")
+        .select("order_number,name,total,status,created_at,items,digital_only")
         .order("created_at", { ascending: false }),
       admin.from("products").select("id,name,swatch,image_url,in_stock"),
       admin.from("custom_orders").select("status"),
@@ -109,7 +111,9 @@ export async function getDashboardData(): Promise<DashboardData> {
     ]);
 
     const orders = (ordersRes.data as OrderRow[] | null) ?? [];
-    const paid = orders.filter((o) => o.status !== "Pending payment");
+    // Pattern-only (digital) orders live under Admin → Patterns, not here.
+    const physical = orders.filter((o) => !o.digital_only);
+    const paid = physical.filter((o) => o.status !== "Pending payment");
 
     // Units sold per product name (from paid orders' line items).
     const tally = new Map<string, number>();
@@ -130,7 +134,8 @@ export async function getDashboardData(): Promise<DashboardData> {
     return {
       revenue: paid.reduce((n, o) => n + Number(o.total), 0),
       orderCount: paid.length,
-      pendingPayment: orders.length - paid.length,
+      pendingPayment: physical.filter((o) => o.status === "Pending payment")
+        .length,
       productCount: products.length,
       customNew: customs.filter((c) => c.status === "New").length,
       pendingReviews: reviews.filter((r) => !r.approved).length,

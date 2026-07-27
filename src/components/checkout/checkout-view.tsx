@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
-import { CreditCard, Lock, ShieldCheck } from "lucide-react";
+import { CreditCard, FileText, Lock, ShieldCheck } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { ButtonLink } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -22,7 +22,9 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
     {},
   );
 
-  const shipping = shippingMethod === "express" ? 16 : 6;
+  const hasPhysical = cart.some((i) => i.kind !== "pattern");
+  const hasPattern = cart.some((i) => i.kind === "pattern");
+  const shipping = hasPhysical ? (shippingMethod === "express" ? 16 : 6) : 0;
   const tax = Math.round(cartSubtotal * 0.05 * 100) / 100;
   const total = cartSubtotal + shipping + tax;
 
@@ -68,8 +70,20 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
               />
               <input name="phone" placeholder="Phone" className={`${field} sm:col-span-2`} />
             </div>
+            {hasPattern && (
+              <div className="mt-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-surface-muted/50 p-4 text-sm">
+                <FileText className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <p className="text-foreground">
+                  Your order includes a digital pattern. The PDF will be{" "}
+                  <strong>emailed to the address above</strong> right after
+                  payment — please double-check it&apos;s spelled correctly.
+                </p>
+              </div>
+            )}
           </section>
 
+          {hasPhysical && (
+          <>
           <section>
             <h2 className="mb-4 font-serif text-2xl text-foreground">
               Shipping address
@@ -126,6 +140,8 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
               ))}
             </div>
           </section>
+          </>
+          )}
 
           <section>
             <h2 className="mb-4 flex items-center gap-2 font-serif text-2xl text-foreground">
@@ -185,7 +201,9 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Shipping</dt>
-                <dd className="font-medium">{format(shipping)}</dd>
+                <dd className="font-medium">
+                  {hasPhysical ? format(shipping) : "Digital — none"}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Tax</dt>
