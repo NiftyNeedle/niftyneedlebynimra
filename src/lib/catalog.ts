@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Product, ProductCustomization } from "./types";
+import { createAdminClient } from "./supabase/admin";
 import {
   products as mockProducts,
   getProductBySlug as mockGetBySlug,
@@ -64,14 +65,36 @@ function mapRow(r: ProductRow): Product {
 }
 
 export async function getProducts(): Promise<Product[]> {
+  // Mock data only stands in when the DB isn't configured or errors — NOT
+  // when the shop is genuinely empty (an empty catalogue stays empty).
   if (!db) return mockProducts;
   const { data, error } = await db
     .from("products")
     .select("*")
     .eq("archived", false)
     .order("sort_order", { ascending: true });
-  if (error || !data || data.length === 0) return mockProducts;
+  if (error || !data) return mockProducts;
   return (data as ProductRow[]).map(mapRow);
+}
+
+/**
+ * Admin-only product list — reads the real DB via the service key and NEVER
+ * falls back to mock data, so the admin always reflects the true catalogue
+ * (an empty list means an empty shop). Returns [] if the DB isn't set up.
+ */
+export async function getAdminProducts(): Promise<Product[]> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("products")
+      .select("*")
+      .eq("archived", false)
+      .order("sort_order", { ascending: true });
+    if (error || !data) return [];
+    return (data as ProductRow[]).map(mapRow);
+  } catch {
+    return [];
+  }
 }
 
 export async function getBestSellers(limit = 8): Promise<Product[]> {
@@ -87,8 +110,9 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     .eq("slug", slug)
     .eq("archived", false)
     .maybeSingle();
-  if (error || !data) return mockGetBySlug(slug) ?? null;
-  return mapRow(data as ProductRow);
+  // Only fall back to mock on a DB error; a genuine miss is a real 404.
+  if (error) return mockGetBySlug(slug) ?? null;
+  return data ? mapRow(data as ProductRow) : null;
 }
 
 export async function getRelatedProducts(
