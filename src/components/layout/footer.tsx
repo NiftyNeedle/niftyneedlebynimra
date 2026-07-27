@@ -14,10 +14,10 @@ const columns = [
     title: "Shop",
     links: [
       { label: "All Products", href: "/shop" },
+      { label: "Crochet Patterns", href: "/patterns" },
       { label: "Crochet Flowers", href: "/shop?category=crochet-flowers" },
       { label: "Bouquets", href: "/shop?category=bouquets" },
       { label: "Plushies", href: "/shop?category=plushies" },
-      { label: "Gift Sets", href: "/shop?category=gift-sets" },
     ],
   },
   {
