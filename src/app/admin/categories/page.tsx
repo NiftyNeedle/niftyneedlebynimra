@@ -25,7 +25,6 @@ export default async function AdminCategoriesPage() {
       name: c.name,
       description: c.description,
       icon: c.icon,
-      accent: c.accent,
     }));
 
     // Count products per category for a helpful "N products" hint.

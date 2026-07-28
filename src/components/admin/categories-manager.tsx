@@ -3,7 +3,6 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import {
   upsertCategory,
@@ -17,17 +16,10 @@ export interface AdminCategory {
   name: string;
   description: string;
   icon: string;
-  accent: string;
 }
 
 const field =
   "w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring";
-
-const accentDot: Record<string, string> = {
-  pink: "bg-pink",
-  sage: "bg-sage",
-  brown: "bg-brown",
-};
 
 export function CategoriesManager({
   categories,
@@ -108,18 +100,7 @@ export function CategoriesManager({
                   key={c.id}
                   className="flex flex-col rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)]"
                 >
-                  <div className="flex items-start justify-between">
-                    <span className="text-3xl">{c.icon}</span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-muted">
-                      <span
-                        className={cn(
-                          "h-2.5 w-2.5 rounded-full",
-                          accentDot[c.accent] ?? "bg-sage",
-                        )}
-                      />
-                      {c.accent}
-                    </span>
-                  </div>
+                  <span className="text-3xl">{c.icon}</span>
                   <h3 className="mt-3 font-serif text-lg text-foreground">
                     {c.name}
                   </h3>
@@ -275,21 +256,6 @@ function CategoryForm({
               placeholder="Everlasting blooms that never wilt."
               className={field}
             />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-foreground">
-              Accent colour
-            </label>
-            <select
-              name="accent"
-              defaultValue={editing?.accent ?? "sage"}
-              className={field}
-            >
-              <option value="pink">Pink</option>
-              <option value="sage">Sage</option>
-              <option value="brown">Brown</option>
-            </select>
           </div>
         </div>
 

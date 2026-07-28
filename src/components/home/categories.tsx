@@ -4,14 +4,6 @@ import { getCategories } from "@/lib/categories";
 import { getProducts } from "@/lib/catalog";
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { cn } from "@/lib/utils";
-
-const accentBg: Record<string, string> = {
-  pink: "from-pink/30 to-pink/5",
-  sage: "from-sage/30 to-sage/5",
-  brown: "from-brown/20 to-brown/5",
-};
-
 export async function Categories() {
   const [categories, products] = await Promise.all([
     getCategories(),
@@ -42,10 +34,7 @@ export async function Categories() {
             <Reveal key={c.id} index={i % 5}>
               <Link
                 href={`/shop?category=${c.slug}`}
-                className={cn(
-                  "group relative flex h-44 flex-col justify-between overflow-hidden rounded-3xl border border-border bg-gradient-to-br p-5 transition-all duration-500 hover:shadow-[var(--shadow-lift)] hover:-translate-y-1",
-                  accentBg[c.accent],
-                )}
+                className="group relative flex h-44 flex-col justify-between overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-surface-muted to-surface p-5 transition-all duration-500 hover:border-primary/40 hover:shadow-[var(--shadow-lift)] hover:-translate-y-1"
               >
                 <span className="text-4xl transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6">
                   {c.icon}

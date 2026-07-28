@@ -14,7 +14,8 @@ export interface Category {
   /** Emoji or short icon token used by the storefront cards. */
   icon: string;
   productCount: number;
-  accent: "brown" | "sage" | "pink";
+  /** @deprecated categories no longer carry a colour — kept optional so old data still compiles. */
+  accent?: "brown" | "sage" | "pink";
 }
 
 export interface ProductImage {

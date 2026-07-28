@@ -45,13 +45,11 @@ export async function upsertCategory(
     slug = slug ? slugify(slug) : slugify(name);
     if (!slug) return { error: "Please provide a valid name or URL slug." };
 
-    const accent = String(formData.get("accent") ?? "sage");
     const row = {
       slug,
       name,
       description: String(formData.get("description") ?? "").trim(),
       icon: String(formData.get("icon") ?? "").trim() || "🧶",
-      accent: ["pink", "sage", "brown"].includes(accent) ? accent : "sage",
       sort_order: toInt(formData.get("sort_order")),
     };
 

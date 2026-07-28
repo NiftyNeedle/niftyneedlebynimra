@@ -19,7 +19,6 @@ interface CategoryRow {
   name: string;
   description: string;
   icon: string;
-  accent: string;
   sort_order: number;
 }
 
@@ -30,9 +29,6 @@ function mapRow(r: CategoryRow): Category {
     name: r.name,
     description: r.description ?? "",
     icon: r.icon || "🧶",
-    accent: (["pink", "sage", "brown"].includes(r.accent)
-      ? r.accent
-      : "sage") as Category["accent"],
     productCount: 0,
   };
 }
@@ -42,7 +38,7 @@ export async function getCategories(): Promise<Category[]> {
   if (!db) return staticCategories;
   const { data, error } = await db
     .from("categories")
-    .select("id,slug,name,description,icon,accent,sort_order")
+    .select("id,slug,name,description,icon,sort_order")
     .order("sort_order", { ascending: true });
   if (error) return staticCategories; // table not set up yet
   return (data as CategoryRow[]).map(mapRow);
@@ -54,7 +50,7 @@ export async function getAdminCategories(): Promise<Category[]> {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("categories")
-      .select("id,slug,name,description,icon,accent,sort_order")
+      .select("id,slug,name,description,icon,sort_order")
       .order("sort_order", { ascending: true });
     if (error || !data) return [];
     return (data as CategoryRow[]).map(mapRow);
