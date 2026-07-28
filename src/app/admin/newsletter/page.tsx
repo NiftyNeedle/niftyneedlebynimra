@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { EmailLink } from "@/components/ui/email-link";
 
 export const dynamic = "force-dynamic";
 
@@ -32,12 +33,13 @@ export default async function AdminNewsletterPage() {
           </p>
         </div>
         {subs.length > 0 && (
-          <a
-            href={`mailto:?bcc=${subs.map((s) => s.email).join(",")}`}
+          <EmailLink
+            bcc={subs.map((s) => s.email).join(",")}
+            subject="News from Nifty Needle 🧶"
             className="rounded-full border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-surface-muted"
           >
             Email all (BCC)
-          </a>
+          </EmailLink>
         )}
       </div>
 

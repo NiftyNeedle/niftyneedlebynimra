@@ -13,21 +13,31 @@ function isMobileDevice() {
 
 export function EmailLink({
   to,
+  bcc,
   subject,
   className,
   children,
 }: {
-  to: string;
+  to?: string;
+  bcc?: string;
   subject?: string;
   className?: string;
   children: ReactNode;
 }) {
-  const mailto = `mailto:${to}${
-    subject ? `?subject=${encodeURIComponent(subject)}` : ""
+  // mailto: (mobile)
+  const mailParams: string[] = [];
+  if (subject) mailParams.push(`subject=${encodeURIComponent(subject)}`);
+  if (bcc) mailParams.push(`bcc=${encodeURIComponent(bcc)}`);
+  const mailto = `mailto:${to ? encodeURIComponent(to) : ""}${
+    mailParams.length ? "?" + mailParams.join("&") : ""
   }`;
-  const gmail = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
-    to,
-  )}${subject ? `&su=${encodeURIComponent(subject)}` : ""}`;
+
+  // Gmail web compose (desktop)
+  const gmailParams = ["view=cm", "fs=1"];
+  if (to) gmailParams.push(`to=${encodeURIComponent(to)}`);
+  if (bcc) gmailParams.push(`bcc=${encodeURIComponent(bcc)}`);
+  if (subject) gmailParams.push(`su=${encodeURIComponent(subject)}`);
+  const gmail = `https://mail.google.com/mail/?${gmailParams.join("&")}`;
 
   // Render mailto first (safe for SSR / no-JS); upgrade to Gmail on desktop.
   const [href, setHref] = useState(mailto);
