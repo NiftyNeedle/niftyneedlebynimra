@@ -8,6 +8,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { SiteChrome } from "@/components/layout/site-chrome";
 import { CurrencyProvider } from "@/components/currency/currency-provider";
 import { getRates, currencyForCountry, isCurrency } from "@/lib/currency";
+import { getCategories } from "@/lib/categories";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -62,10 +63,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [rates, cookieStore, headerList] = await Promise.all([
+  const [rates, cookieStore, headerList, categories] = await Promise.all([
     getRates(),
     cookies(),
     headers(),
+    getCategories(),
   ]);
   const savedCurrency = cookieStore.get("nn_currency")?.value;
   const initialCurrency = isCurrency(savedCurrency)
@@ -89,7 +91,7 @@ export default async function RootLayout({
           <CurrencyProvider initialCurrency={initialCurrency} rates={rates}>
             <StoreProvider>
               <ToastProvider>
-                <SiteChrome>{children}</SiteChrome>
+                <SiteChrome categories={categories}>{children}</SiteChrome>
               </ToastProvider>
             </StoreProvider>
           </CurrencyProvider>

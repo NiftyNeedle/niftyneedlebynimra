@@ -1,11 +1,15 @@
 import { getAdminProducts } from "@/lib/catalog";
+import { getCategories } from "@/lib/categories";
 import { ProductsManager } from "@/components/admin/products-manager";
 
 // Always show the freshest product list in the admin.
 export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
-  const products = await getAdminProducts();
+  const [products, categories] = await Promise.all([
+    getAdminProducts(),
+    getCategories(),
+  ]);
 
   // Runtime diagnostic: confirms whether this deployment can write to the DB.
   const envStatus = {
@@ -32,7 +36,7 @@ export default async function AdminProductsPage() {
           </p>
         </div>
       )}
-      <ProductsManager products={products} />
+      <ProductsManager products={products} categories={categories} />
     </>
   );
 }

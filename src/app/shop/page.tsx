@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/page-header";
 import { ShopClient } from "@/components/shop/shop-client";
 import { getProducts } from "@/lib/catalog";
+import { getCategories } from "@/lib/categories";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -14,7 +15,10 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function ShopPage() {
-  const products = await getProducts();
+  const [products, categories] = await Promise.all([
+    getProducts(),
+    getCategories(),
+  ]);
   return (
     <>
       <PageHeader
@@ -24,7 +28,7 @@ export default async function ShopPage() {
         crumbs={[{ label: "Shop" }]}
       />
       <Suspense fallback={<div className="py-24 text-center text-muted">Loading…</div>}>
-        <ShopClient products={products} />
+        <ShopClient products={products} categories={categories} />
       </Suspense>
     </>
   );

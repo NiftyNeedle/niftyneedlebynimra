@@ -17,7 +17,7 @@ import {
   ALL_CUSTOMIZATION,
 } from "@/lib/types";
 import { DEFAULT_YARN_OPTIONS, DEFAULT_SIZE_OPTIONS } from "@/lib/customization";
-import { categories } from "@/lib/data";
+import type { Category } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { upsertProduct, deleteProduct, type ActionState } from "@/app/admin/products/actions";
@@ -26,9 +26,16 @@ const field =
   "w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring";
 const label = "mb-1.5 block text-sm font-medium text-foreground";
 
-const editableCategories = categories.filter((c) => c.slug !== "custom-orders");
-
-export function ProductsManager({ products }: { products: Product[] }) {
+export function ProductsManager({
+  products,
+  categories,
+}: {
+  products: Product[];
+  categories: Category[];
+}) {
+  const editableCategories = categories.filter(
+    (c) => c.slug !== "custom-orders",
+  );
   const router = useRouter();
   const toast = useToast();
   const [editing, setEditing] = useState<Product | null>(null);
@@ -160,6 +167,7 @@ export function ProductsManager({ products }: { products: Product[] }) {
           key={editing?.id ?? duplicateFrom?.id ?? "new"}
           editing={editing}
           base={base}
+          categories={editableCategories}
           onClose={() => setShowForm(false)}
           onSaved={() => {
             setShowForm(false);
@@ -174,11 +182,13 @@ export function ProductsManager({ products }: { products: Product[] }) {
 function ProductForm({
   editing,
   base,
+  categories: editableCategories,
   onClose,
   onSaved,
 }: {
   editing: Product | null;
   base: Product | null;
+  categories: Category[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -285,9 +295,12 @@ function ProductForm({
             <label className={label}>Category</label>
             <select
               name="category_slug"
-              defaultValue={base?.categorySlug ?? editableCategories[0].slug}
+              defaultValue={base?.categorySlug ?? editableCategories[0]?.slug}
               className={field}
             >
+              {editableCategories.length === 0 && (
+                <option value="">No categories yet — add one first</option>
+              )}
               {editableCategories.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.name}

@@ -45,3 +45,4 @@ create table if not exists public.pattern_downloads (
   unique (pattern_id, email)
 );
 alter table public.pattern_downloads enable row level security;
+/

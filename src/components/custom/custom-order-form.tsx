@@ -29,8 +29,41 @@ export function CustomOrderForm() {
   const [done, setDone] = useState(false);
   const [previews, setPreviews] = useState<Preview[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const next = () => setStep((s) => Math.min(steps.length - 1, s + 1));
+  const val = (name: string) => {
+    const el = formRef.current?.elements.namedItem(name) as
+      | HTMLInputElement
+      | HTMLTextAreaElement
+      | null;
+    return (el?.value ?? "").trim();
+  };
+
+  // Important fields that must be filled before leaving a step.
+  const validateStep = (s: number): string | null => {
+    if (s === 0) {
+      if (!val("title")) return "Please tell us what you'd like made.";
+      if (!val("description"))
+        return "Please describe your idea so we can quote it.";
+    }
+    if (s === 2) {
+      if (!val("name")) return "Please enter your name.";
+      const email = val("email");
+      if (!email) return "Please enter your email.";
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+        return "Please enter a valid email address.";
+    }
+    return null;
+  };
+
+  const next = () => {
+    const err = validateStep(step);
+    if (err) {
+      toast(err, "info");
+      return;
+    }
+    setStep((s) => Math.min(steps.length - 1, s + 1));
+  };
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   useEffect(() => {
@@ -120,13 +153,14 @@ export function CustomOrderForm() {
       </ol>
 
       <form
+        ref={formRef}
         action={formAction}
         className="overflow-hidden rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow-soft)] md:p-8"
       >
         {/* Step 1 — Your Idea */}
         <div className={cn("space-y-5", step === 0 ? "block" : "hidden")}>
           <div>
-            <label className={labelCls}>What would you like made?</label>
+            <label className={labelCls}>What would you like made? *</label>
             <input
               name="title"
               placeholder="e.g. A crochet portrait of my cat"
@@ -157,7 +191,7 @@ export function CustomOrderForm() {
             </div>
           </div>
           <div>
-            <label className={labelCls}>Theme / description</label>
+            <label className={labelCls}>Theme / description *</label>
             <textarea
               name="description"
               rows={4}
@@ -265,11 +299,11 @@ export function CustomOrderForm() {
         <div className={cn("space-y-5", step === 2 ? "block" : "hidden")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={labelCls}>Full name</label>
+              <label className={labelCls}>Full name *</label>
               <input name="name" placeholder="Your name" className={field} />
             </div>
             <div>
-              <label className={labelCls}>Email</label>
+              <label className={labelCls}>Email *</label>
               <input name="email" type="email" placeholder="you@example.com" className={field} />
             </div>
             <div>

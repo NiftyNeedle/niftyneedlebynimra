@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Box,
   FileText,
+  FolderTree,
   LayoutDashboard,
   Mail,
   Newspaper,
@@ -22,6 +23,7 @@ import { logout } from "@/app/admin/login/actions";
 const links = [
   { href: "/admin", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", Icon: Box },
+  { href: "/admin/categories", label: "Categories", Icon: FolderTree },
   { href: "/admin/patterns", label: "Patterns", Icon: FileText },
   { href: "/admin/orders", label: "Orders", Icon: ShoppingCart },
   { href: "/admin/custom-orders", label: "Custom Orders", Icon: Sparkles },

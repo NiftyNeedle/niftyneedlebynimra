@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { EmailLink } from "@/components/ui/email-link";
 import {
   updateCustomOrderStatus,
   deleteCustomOrder,
@@ -206,12 +207,15 @@ export function CustomRequests({ requests }: { requests: CustomOrder[] }) {
                     <option key={s}>{s}</option>
                   ))}
                 </select>
-                <a
-                  href={`mailto:${r.email ?? ""}`}
+                <EmailLink
+                  to={r.email ?? ""}
+                  subject={`Re: your Nifty Needle custom request${
+                    r.title ? ` — ${r.title}` : ""
+                  }`}
                   className="rounded-full border border-border px-4 py-1.5 text-sm font-medium transition-colors hover:bg-surface-muted"
                 >
                   Reply by email
-                </a>
+                </EmailLink>
                 <button
                   onClick={() => remove(r)}
                   disabled={pending}

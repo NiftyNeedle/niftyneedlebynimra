@@ -4,8 +4,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { categories } from "@/lib/data";
-import type { Product } from "@/lib/types";
+import type { Category, Product } from "@/lib/types";
 import { ProductCard } from "@/components/home/product-card";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +18,13 @@ const sortOptions: { value: SortKey; label: string }[] = [
   { value: "rating", label: "Top Rated" },
 ];
 
-export function ShopClient({ products }: { products: Product[] }) {
+export function ShopClient({
+  products,
+  categories,
+}: {
+  products: Product[];
+  categories: Category[];
+}) {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") ?? "all";
   const allColors = useMemo(
