@@ -1,11 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { COUPONS } from "@/lib/coupons";
 import { CouponsManager, type AdminCoupon } from "@/components/admin/coupons-manager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminCouponsPage() {
   let coupons: AdminCoupon[] = [];
+  let notSetUp = false;
   try {
     const admin = createAdminClient();
     const { data, error } = await admin
@@ -15,15 +15,10 @@ export default async function AdminCouponsPage() {
     if (error) throw error;
     coupons = (data as AdminCoupon[]) ?? [];
   } catch {
-    // DB/coupons table not set up yet → show the built-in codes read-only.
-    coupons = COUPONS.map((c, i) => ({
-      id: `builtin-${i}`,
-      code: c.code,
-      rate: c.rate,
-      description: c.description,
-      active: true,
-    }));
+    // coupons table not set up yet → show a real empty/setup state, NOT
+    // synthetic built-in rows the admin can't delete.
+    notSetUp = true;
   }
 
-  return <CouponsManager coupons={coupons} />;
+  return <CouponsManager coupons={coupons} notSetUp={notSetUp} />;
 }

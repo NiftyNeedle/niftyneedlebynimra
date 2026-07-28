@@ -23,7 +23,13 @@ export interface AdminCoupon {
 const field =
   "w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring";
 
-export function CouponsManager({ coupons }: { coupons: AdminCoupon[] }) {
+export function CouponsManager({
+  coupons,
+  notSetUp,
+}: {
+  coupons: AdminCoupon[];
+  notSetUp?: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [editing, setEditing] = useState<AdminCoupon | null>(null);
@@ -77,18 +83,26 @@ export function CouponsManager({ coupons }: { coupons: AdminCoupon[] }) {
         </button>
       </div>
 
-      {coupons.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-border py-16 text-center">
-          <p className="text-muted">No coupons yet.</p>
+      {notSetUp && (
+        <div className="rounded-2xl border border-dashed border-border bg-surface-muted/50 p-4 text-sm text-muted">
+          The coupons database isn&apos;t set up yet. Run{" "}
+          <code className="rounded bg-surface px-1.5 py-0.5">
+            supabase/coupons.sql
+          </code>{" "}
+          in your Supabase SQL editor (it seeds WELCOME10 &amp; LOVE15 as
+          editable rows), then reload this page.
         </div>
+      )}
+
+      {coupons.length === 0 ? (
+        !notSetUp && (
+          <div className="rounded-3xl border border-dashed border-border py-16 text-center">
+            <p className="text-muted">No coupons yet.</p>
+          </div>
+        )
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {coupons.map((c) => {
-            // Built-in codes exist only in code (shown when the coupons table
-            // isn't set up). They have no real DB row, so they can't be
-            // edited or deleted — guard against acting on their synthetic id.
-            const isBuiltin = c.id.startsWith("builtin-");
-            return (
+          {coupons.map((c) => (
             <div
               key={c.id}
               className={cn(
@@ -117,43 +131,34 @@ export function CouponsManager({ coupons }: { coupons: AdminCoupon[] }) {
               </p>
               <p className="mt-1 text-sm text-muted">{c.description}</p>
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border pt-4 text-sm">
-                {isBuiltin ? (
-                  <span className="text-xs text-muted">
-                    Built-in code — set up the coupons table to manage codes.
-                  </span>
-                ) : (
-                  <>
-                    <button
-                      disabled={pending}
-                      onClick={() => toggle(c)}
-                      className="font-medium text-accent hover:underline disabled:opacity-50"
-                    >
-                      {c.active ? "Disable" : "Enable"}
-                    </button>
-                    <button
-                      disabled={pending}
-                      onClick={() => {
-                        setEditing(c);
-                        setShowForm(true);
-                      }}
-                      className="font-medium text-accent hover:underline disabled:opacity-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      disabled={pending}
-                      onClick={() => del(c)}
-                      aria-label="Delete coupon"
-                      className="ml-auto grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface-muted hover:text-accent disabled:opacity-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </>
-                )}
+                <button
+                  disabled={pending}
+                  onClick={() => toggle(c)}
+                  className="font-medium text-accent hover:underline disabled:opacity-50"
+                >
+                  {c.active ? "Disable" : "Enable"}
+                </button>
+                <button
+                  disabled={pending}
+                  onClick={() => {
+                    setEditing(c);
+                    setShowForm(true);
+                  }}
+                  className="font-medium text-accent hover:underline disabled:opacity-50"
+                >
+                  Edit
+                </button>
+                <button
+                  disabled={pending}
+                  onClick={() => del(c)}
+                  aria-label="Delete coupon"
+                  className="ml-auto grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface-muted hover:text-accent disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
-            );
-          })}
+          ))}
         </div>
       )}
 
