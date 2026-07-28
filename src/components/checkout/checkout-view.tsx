@@ -13,7 +13,7 @@ const field =
   "w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring";
 
 export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
-  const { cart, cartSubtotal } = useStore();
+  const { cart, cartSubtotal, coupon } = useStore();
   const toast = useToast();
   const { format, currency } = useCurrency();
   const [shippingMethod, setShippingMethod] = useState("standard");
@@ -25,8 +25,11 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
   const hasPhysical = cart.some((i) => i.kind !== "pattern");
   const hasPattern = cart.some((i) => i.kind === "pattern");
   const shipping = hasPhysical ? (shippingMethod === "express" ? 16 : 6) : 0;
-  const tax = Math.round(cartSubtotal * 0.05 * 100) / 100;
-  const total = cartSubtotal + shipping + tax;
+  const discountAmount =
+    Math.round(cartSubtotal * (coupon?.rate ?? 0) * 100) / 100;
+  const taxable = cartSubtotal - discountAmount;
+  const tax = Math.round(taxable * 0.05 * 100) / 100;
+  const total = taxable + shipping + tax;
 
   useEffect(() => {
     if (state.error) toast(state.error, "info");
@@ -54,6 +57,7 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
 
       <form action={formAction} className="grid gap-10 lg:grid-cols-[1fr_22rem]">
         <input type="hidden" name="items" value={JSON.stringify(cart)} />
+        <input type="hidden" name="coupon" value={coupon?.code ?? ""} />
 
         <div className="space-y-10">
           <section>
@@ -199,6 +203,12 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
                 <dt className="text-muted">Subtotal</dt>
                 <dd className="font-medium">{format(cartSubtotal)}</dd>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sage-deep">
+                  <dt>Discount{coupon ? ` (${coupon.code})` : ""}</dt>
+                  <dd>−{format(discountAmount)}</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-muted">Shipping</dt>
                 <dd className="font-medium">

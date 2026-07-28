@@ -10,6 +10,12 @@ import {
   type ReactNode,
 } from "react";
 import type { Product } from "./types";
+import { unitPriceFor } from "./pricing";
+
+export interface AppliedCoupon {
+  code: string;
+  rate: number;
+}
 
 /* ------------------------------------------------------------------ *
  *  Client-side cart + wishlist store (localStorage persistence).
@@ -54,6 +60,8 @@ interface StoreState {
   isWishlisted: (productId: string) => boolean;
   cartCount: number;
   cartSubtotal: number;
+  coupon: AppliedCoupon | null;
+  setCoupon: (coupon: AppliedCoupon | null) => void;
 }
 
 const StoreContext = createContext<StoreState | null>(null);
@@ -90,6 +98,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     "nn_wishlist",
     [],
   );
+  const [coupon, setCoupon] = usePersistentState<AppliedCoupon | null>(
+    "nn_coupon",
+    null,
+  );
   const [cartOpen, setCartOpen] = useState(false);
 
   const addToCart: StoreState["addToCart"] = useCallback(
@@ -115,7 +127,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             productId: product.id,
             slug: product.slug,
             name: product.name,
-            price: product.salePrice ?? product.price,
+            price: unitPriceFor(product, options),
             swatch: product.swatch,
             quantity,
             options,
@@ -169,7 +181,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [setCart],
   );
 
-  const clearCart = useCallback(() => setCart([]), [setCart]);
+  const clearCart = useCallback(() => {
+    setCart([]);
+    setCoupon(null);
+  }, [setCart, setCoupon]);
 
   const toggleWishlist = useCallback(
     (productId: string) =>
@@ -209,6 +224,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     isWishlisted,
     cartCount,
     cartSubtotal,
+    coupon,
+    setCoupon,
   };
 
   return (

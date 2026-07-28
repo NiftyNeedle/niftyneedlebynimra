@@ -12,29 +12,36 @@ import { validateCoupon } from "@/app/cart/coupon-actions";
 const SHIP_COST = 6;
 
 export function CartView() {
-  const { cart, updateQuantity, removeFromCart, cartSubtotal } = useStore();
+  const { cart, updateQuantity, removeFromCart, cartSubtotal, coupon, setCoupon } =
+    useStore();
   const toast = useToast();
   const { format } = useCurrency();
   const [code, setCode] = useState("");
-  const [discount, setDiscount] = useState(0);
   const [applying, startApply] = useTransition();
 
   const hasPhysical = cart.some((i) => i.kind !== "pattern");
   const shipping = hasPhysical ? SHIP_COST : 0;
+  const discount = coupon?.rate ?? 0;
   const discountAmount = cartSubtotal * discount;
   const tax = (cartSubtotal - discountAmount) * 0.05;
   const total = cartSubtotal - discountAmount + shipping + tax;
 
   const applyCoupon = () => {
     startApply(async () => {
-      const coupon = await validateCoupon(code);
-      if (coupon) {
-        setDiscount(coupon.rate);
-        toast(`Coupon applied — ${Math.round(coupon.rate * 100)}% off!`);
+      const valid = await validateCoupon(code);
+      if (valid) {
+        setCoupon({ code: valid.code, rate: valid.rate });
+        toast(`Coupon applied — ${Math.round(valid.rate * 100)}% off!`);
+        setCode("");
       } else {
         toast("That coupon code isn't valid", "info");
       }
     });
+  };
+
+  const removeCoupon = () => {
+    setCoupon(null);
+    toast("Coupon removed");
   };
 
   if (cart.length === 0) {
@@ -166,28 +173,45 @@ export function CartView() {
               Order Summary
             </h2>
 
-            <div className="mt-5 flex gap-2">
-              <div className="relative flex-1">
-                <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                <input
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="Coupon code"
-                  className="w-full rounded-full border border-border bg-surface-muted/50 py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                />
+            {coupon ? (
+              <div className="mt-5 flex items-center justify-between rounded-full border border-sage-deep/40 bg-sage/15 px-4 py-2.5 text-sm">
+                <span className="flex items-center gap-2 font-medium text-sage-deep">
+                  <Tag className="h-4 w-4" />
+                  {coupon.code} — {Math.round(coupon.rate * 100)}% off
+                </span>
+                <button
+                  onClick={removeCoupon}
+                  className="text-xs font-medium text-muted hover:text-accent"
+                >
+                  Remove
+                </button>
               </div>
-              <button
-                onClick={applyCoupon}
-                disabled={applying}
-                className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
-              >
-                {applying ? "…" : "Apply"}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-muted">
-              Try <span className="font-medium">WELCOME10</span> or{" "}
-              <span className="font-medium">LOVE15</span>
-            </p>
+            ) : (
+              <>
+                <div className="mt-5 flex gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                    <input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="Coupon code"
+                      className="w-full rounded-full border border-border bg-surface-muted/50 py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                  <button
+                    onClick={applyCoupon}
+                    disabled={applying}
+                    className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                  >
+                    {applying ? "…" : "Apply"}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-muted">
+                  Try <span className="font-medium">WELCOME10</span> or{" "}
+                  <span className="font-medium">LOVE15</span>
+                </p>
+              </>
+            )}
 
             <dl className="mt-6 space-y-3 border-t border-border pt-6 text-sm">
               <div className="flex justify-between">
