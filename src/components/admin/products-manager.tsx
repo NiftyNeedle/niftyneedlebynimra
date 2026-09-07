@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  forwardRef,
   useActionState,
+  useId,
   useEffect,
   useMemo,
   useRef,
@@ -9,6 +11,7 @@ import {
   useTransition,
   type ChangeEvent,
   type Dispatch,
+  type KeyboardEvent,
   type SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -31,6 +34,7 @@ import {
 } from "@/lib/customization";
 import type { Category } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
+import { suggestColors } from "@/lib/colors";
 import { useToast } from "@/components/ui/toast";
 import { upsertProduct, deleteProduct, type ActionState } from "@/app/admin/products/actions";
 
@@ -793,11 +797,48 @@ function OptionListEditor({
   options: DraftOption[];
   setOptions: Dispatch<SetStateAction<DraftOption[]>>;
 }) {
+  const labelRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const update = (i: number, patch: Partial<DraftOption>) =>
     setOptions((prev) => prev.map((o, j) => (j === i ? { ...o, ...patch } : o)));
   const remove = (i: number) =>
     setOptions((prev) => prev.filter((_, j) => j !== i));
   const add = () => setOptions((prev) => [...prev, { label: "", price: "" }]);
+
+  /** Add a row after `i` and put the cursor in it, so a list can be typed
+   *  straight through with Enter between entries. */
+  const addAfter = (i: number) => {
+    setOptions((prev) => [
+      ...prev.slice(0, i + 1),
+      { label: "", price: "" },
+      ...prev.slice(i + 1),
+    ]);
+    requestAnimationFrame(() => labelRefs.current[i + 1]?.focus());
+  };
+
+  /** Typing or pasting "Red, Purple, Pink" fills one row per colour. */
+  const setLabel = (i: number, value: string) => {
+    if (!value.includes(",")) {
+      update(i, { label: value });
+      return;
+    }
+    const parts = value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (parts.length === 0) {
+      update(i, { label: "" });
+      return;
+    }
+    setOptions((prev) => [
+      ...prev.slice(0, i),
+      ...parts.map((label, n) => ({
+        label,
+        price: n === 0 ? prev[i]?.price ?? "" : "",
+      })),
+      ...prev.slice(i + 1),
+    ]);
+  };
 
   return (
     <div className="mt-2 min-w-0 rounded-xl bg-surface-muted/50 p-2.5 sm:p-3">
@@ -814,11 +855,14 @@ function OptionListEditor({
       <div className="space-y-2">
         {options.map((o, i) => (
           <div key={i} className="flex min-w-0 items-center gap-2">
-            <input
+            <OptionLabelInput
+              ref={(el) => {
+                labelRefs.current[i] = el;
+              }}
               value={o.label}
-              onChange={(e) => update(i, { label: e.target.value })}
-              placeholder="Option name"
-              className="w-0 min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              onChange={(value) => setLabel(i, value)}
+              onEnter={() => addAfter(i)}
+              usedLabels={options.map((x) => x.label)}
             />
             <div className="relative w-16 shrink-0 sm:w-24">
               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted">
@@ -851,8 +895,125 @@ function OptionListEditor({
       </div>
       <p className="mt-2 text-xs text-muted">
         The first choice is the default. Leave the price empty (or 0) for no
-        extra charge — anything else is added to the base price.
+        extra charge. Press Enter for the next row, or paste a list like
+        “Red, Purple, Pink” to fill several at once.
       </p>
     </div>
   );
 }
+
+/**
+ * Option-name box with colour suggestions: typing a couple of letters
+ * offers matching colour names (with a swatch) so long colour lists don't
+ * have to be typed out. Suggestions are only ever a shortcut — any name
+ * typed in full is kept exactly as written.
+ */
+const OptionLabelInput = forwardRef<
+  HTMLInputElement,
+  {
+    value: string;
+    onChange: (value: string) => void;
+    onEnter: () => void;
+    usedLabels: string[];
+  }
+>(function OptionLabelInput({ value, onChange, onEnter, usedLabels }, ref) {
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+  const listId = useId();
+
+  const matches = useMemo(
+    () => suggestColors(value, usedLabels),
+    [value, usedLabels],
+  );
+  const showList = open && matches.length > 0;
+  // Keep the highlight inside the list even if it shrank as the admin typed.
+  const active = Math.min(highlight, matches.length - 1);
+
+  const choose = (name: string) => {
+    onChange(name);
+    setOpen(false);
+    setHighlight(0);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown" && matches.length) {
+      e.preventDefault();
+      setOpen(true);
+      setHighlight(() => (showList ? (active + 1) % matches.length : 0));
+    } else if (e.key === "ArrowUp" && showList) {
+      e.preventDefault();
+      setHighlight(() => (active - 1 + matches.length) % matches.length);
+    } else if (e.key === "Enter") {
+      // Never let Enter submit the whole product form from here.
+      e.preventDefault();
+      if (showList) choose(matches[active].name);
+      else onEnter();
+    } else if (e.key === "Escape" && showList) {
+      e.preventDefault();
+      setOpen(false);
+    } else if (e.key === "Tab") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="relative w-0 min-w-0 flex-1">
+      <input
+        ref={ref}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+          setHighlight(0);
+        }}
+        onKeyDown={onKeyDown}
+        onFocus={() => setOpen(true)}
+        // Blur closes the list, but a click on an item fires first
+        // (onMouseDown) so the choice still registers.
+        onBlur={() => setOpen(false)}
+        placeholder="Option name"
+        autoComplete="off"
+        role="combobox"
+        aria-expanded={showList}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={showList ? `${listId}-${active}` : undefined}
+        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+      />
+      {showList && (
+        <ul
+          id={listId}
+          role="listbox"
+          className="absolute left-0 top-full z-30 mt-1 max-h-56 w-full min-w-40 overflow-y-auto rounded-xl border border-border bg-surface py-1 shadow-[var(--shadow-lift)]"
+        >
+          {matches.map((c, i) => (
+            <li key={c.name} role="presentation">
+              <button
+                type="button"
+                id={`${listId}-${i}`}
+                role="option"
+                aria-selected={i === active}
+                // Fires before blur, so the value is applied.
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  choose(c.name);
+                }}
+                onMouseEnter={() => setHighlight(i)}
+                className={cn(
+                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm",
+                  i === active ? "bg-surface-muted" : "hover:bg-surface-muted",
+                )}
+              >
+                <span
+                  className="h-3.5 w-3.5 shrink-0 rounded-full border border-border"
+                  style={{ background: c.hex }}
+                />
+                {c.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+});
