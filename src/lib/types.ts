@@ -53,6 +53,15 @@ export interface CustomizationField {
   placeholder?: string;
   /** `text`/`note` fields only — a choice always has a value. */
   required?: boolean;
+  /** Nesting: only show this field when an earlier choice field is
+   *  answered with one of `values` (e.g. "Rose Colours" only when
+   *  "Flower" is "Rose"). Absent = always shown. */
+  showWhen?: {
+    /** `id` of the parent field, which always precedes this one. */
+    fieldId: string;
+    /** Parent answers that reveal this field. */
+    values: string[];
+  };
 }
 
 /** What a product lets customers customize.

@@ -25,13 +25,12 @@ import {
   type DraftField,
   type DraftOption,
   customizationFields,
-  draftFromField,
+  draftsFromFields,
   draftFromPreset,
-  fieldFromDraft,
-  isUsableField,
+  fieldsFromDrafts,
 } from "@/lib/customization";
 import type { Category } from "@/lib/types";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { upsertProduct, deleteProduct, type ActionState } from "@/app/admin/products/actions";
 
@@ -213,7 +212,7 @@ function ProductForm({
   // colour/yarn/size flags) are converted to fields on open, so editing
   // one migrates it to the dynamic shape on save.
   const [czFields, setCzFields] = useState<DraftField[]>(() =>
-    customizationFields(base ?? {}).map(draftFromField),
+    draftsFromFields(customizationFields(base ?? {})),
   );
 
   // ── Photo gallery (max MAX_PRODUCT_IMAGES) ─────────────────────────
@@ -274,7 +273,7 @@ function ProductForm({
   ];
 
   const builtCustomization: ProductCustomization | null = customizable
-    ? { fields: czFields.map(fieldFromDraft).filter(isUsableField) }
+    ? { fields: fieldsFromDrafts(czFields) }
     : null;
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
@@ -553,6 +552,24 @@ function ProductForm({
   );
 }
 
+/** Choice fields BEFORE index `i` — the only valid parents, which keeps
+ *  nesting acyclic and top-down. */
+function parentsFor(fields: DraftField[], i: number) {
+  return fields
+    .slice(0, i)
+    .filter((f) => f.type === "choice" && f.options.some((o) => o.label.trim()));
+}
+
+function parentOptions(fields: DraftField[], key: string) {
+  if (!key) return [];
+  return (
+    fields
+      .find((f) => f.key === key)
+      ?.options.map((o) => o.label.trim())
+      .filter(Boolean) ?? []
+  );
+}
+
 function CustomizationFieldsEditor({
   fields,
   setFields,
@@ -652,6 +669,60 @@ function CustomizationFieldsEditor({
               </button>
             </div>
           </div>
+
+          {/* Nesting: only show this field for certain answers of an
+              earlier choice field (e.g. Rose Colours only for Rose). */}
+          {parentsFor(fields, i).length > 0 && (
+            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-surface/60 px-2.5 py-2">
+              <span className="text-xs text-muted">Show</span>
+              <select
+                value={f.showWhenKey}
+                onChange={(e) =>
+                  update(i, { showWhenKey: e.target.value, showWhenValues: [] })
+                }
+                aria-label="Show this field only when"
+                className="min-w-0 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">always</option>
+                {parentsFor(fields, i).map((p) => (
+                  <option key={p.key} value={p.key}>
+                    only when “{p.label.trim() || "unnamed field"}” is…
+                  </option>
+                ))}
+              </select>
+
+              {/* Which of the parent's answers reveal this field. */}
+              {parentOptions(fields, f.showWhenKey).map((label) => {
+                const on = f.showWhenValues.includes(label);
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() =>
+                      update(i, {
+                        showWhenValues: on
+                          ? f.showWhenValues.filter((v) => v !== label)
+                          : [...f.showWhenValues, label],
+                      })
+                    }
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                      on
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border hover:bg-surface-muted",
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+              {f.showWhenKey && f.showWhenValues.length === 0 && (
+                <span className="text-xs text-accent">
+                  pick at least one answer, or it stays always-on
+                </span>
+              )}
+            </div>
+          )}
 
           {f.type === "choice" ? (
             <OptionListEditor

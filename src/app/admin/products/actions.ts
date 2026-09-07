@@ -102,6 +102,26 @@ function sanitizeCustomization(raw: unknown): ProductCustomization | null {
       if (src.required === true) field.required = true;
     }
 
+    // Nesting: keep a dependency only if it names a choice field that
+    // already exists EARLIER in the list (so nesting can't loop) and the
+    // values are real answers of that parent.
+    const dep = (src.showWhen ?? null) as {
+      fieldId?: unknown;
+      values?: unknown;
+    } | null;
+    if (dep) {
+      const parent = fields.find(
+        (f) => f.id === String(dep.fieldId ?? "") && f.type === "choice",
+      );
+      const allowed = new Set(parent?.options?.map((o) => o.label));
+      const values = (Array.isArray(dep.values) ? dep.values : [])
+        .map((v) => String(v))
+        .filter((v) => allowed.has(v));
+      if (parent && values.length) {
+        field.showWhen = { fieldId: parent.id, values };
+      }
+    }
+
     seen.add(label.toLowerCase());
     fields.push(field);
   }

@@ -16,7 +16,11 @@ import {
 } from "lucide-react";
 import type { Product } from "@/lib/types";
 import type { Review } from "@/lib/reviews";
-import { customizationFields, optionPrice } from "@/lib/customization";
+import {
+  customizationFields,
+  optionPrice,
+  visibleFields,
+} from "@/lib/customization";
 import { unitPriceFor } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
@@ -58,6 +62,13 @@ export function ProductDetail({
   const setAnswer = (label: string, value: string) =>
     setAnswers((prev) => ({ ...prev, [label]: value }));
 
+  // Nested fields appear only once their parent is answered accordingly,
+  // so "Rose Colour" shows for Rose and stays hidden for Sunflower.
+  const shownFields = useMemo(
+    () => visibleFields(fields, answers),
+    [fields, answers],
+  );
+
   const [quantity, setQuantity] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   const [tab, setTab] = useState<(typeof tabs)[number]>("Description");
@@ -72,14 +83,14 @@ export function ProductDetail({
   const productionDays = useMemo(() => {
     // Base turnaround, plus a little for up-charged choices (they take
     // more work) and for anything hand-personalised.
-    const upcharged = fields.some(
+    const upcharged = shownFields.some(
       (f) => optionPrice(f, answers[f.label]) > 0,
     );
-    const personalised = fields.some(
+    const personalised = shownFields.some(
       (f) => f.type !== "choice" && (answers[f.label] ?? "").trim(),
     );
     return 5 + (upcharged ? 3 : 0) + (personalised ? 1 : 0);
-  }, [fields, answers]);
+  }, [shownFields, answers]);
 
   // Up to MAX_PRODUCT_IMAGES photos; the swatch stands in when there are none.
   const photos = product.images.map((i) => i.url).filter(Boolean);
@@ -89,7 +100,7 @@ export function ProductDetail({
     setActiveImg((i) => (i + dir + photos.length) % photos.length);
 
   const handleAdd = () => {
-    const missing = fields.find((f) => f.required && !answer(f).trim());
+    const missing = shownFields.find((f) => f.required && !answer(f).trim());
     if (missing) {
       toast(`Please fill in “${missing.label}” first.`, "info");
       return;
@@ -98,7 +109,7 @@ export function ProductDetail({
     // Only answered fields travel with the line (an empty optional note
     // shouldn't clutter the cart, the order or the confirmation email).
     const options: Record<string, string> = {};
-    for (const f of fields) {
+    for (const f of shownFields) {
       const value = answer(f).trim();
       if (value) options[f.label] = value;
     }
@@ -255,13 +266,13 @@ export function ProductDetail({
           </div>
 
           {/* Customization — whatever fields this product defines */}
-          {fields.length > 0 && (
+          {shownFields.length > 0 && (
             <div className="mt-8 space-y-6 rounded-3xl border border-border bg-surface-muted/50 p-6">
               <p className="flex items-center gap-2 text-sm font-medium text-primary">
                 <BadgeCheck className="h-4 w-4" /> Customizable — make it yours
               </p>
 
-              {fields.map((f) => (
+              {shownFields.map((f) => (
                 <div key={f.id}>
                   <label
                     htmlFor={`cz-${f.id}`}
