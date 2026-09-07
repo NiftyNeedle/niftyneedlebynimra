@@ -12,11 +12,12 @@ create table if not exists public.products (
   category_slug     text not null,
   price             numeric(10,2) not null default 0,
   sale_price        numeric(10,2),
-  currency          text not null default 'USD',
+  currency          text not null default 'EUR',
   rating            numeric(2,1) not null default 5.0,
   review_count      integer not null default 0,
   swatch            text not null default '',
-  image_url         text,
+  image_url         text,                     -- cover photo (= image_urls[1])
+  image_urls        text[] not null default '{}', -- gallery, up to 5 photos
   colors            text[] not null default '{}',
   materials         text[] not null default '{}',
   short_description text not null default '',

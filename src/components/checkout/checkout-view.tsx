@@ -239,9 +239,9 @@ export function CheckoutView({ stripeEnabled }: { stripeEnabled: boolean }) {
                   ? `Continue to payment · ${format(total)}`
                   : `Place order · ${format(total)}`}
             </button>
-            {currency !== "USD" && (
+            {currency !== "EUR" && (
               <p className="mt-3 text-center text-xs text-muted">
-                Prices are shown in {currency}; payment is processed in USD.
+                Prices are shown in {currency}; payment is processed in EUR.
               </p>
             )}
             <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted">

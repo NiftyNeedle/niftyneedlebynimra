@@ -6,11 +6,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Format a number as currency. Defaults to USD. */
+/** Format a number as currency. Defaults to EUR — the store's base currency. */
 export function formatPrice(
   amount: number,
-  currency = "USD",
-  locale = "en-US",
+  currency = "EUR",
+  locale = "en-IE",
 ) {
   return new Intl.NumberFormat(locale, {
     style: "currency",

@@ -25,7 +25,7 @@ export function AddPatternToCart({ pattern }: { pattern: CartablePattern }) {
         className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-7 py-4 text-sm font-medium text-primary-foreground shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] sm:w-auto"
       >
         <ShoppingBag className="h-4 w-4" />
-        {inCart ? "In your cart" : `Add to cart — ${format(pattern.price, "USD")}`}
+        {inCart ? "In your cart" : `Add to cart — ${format(pattern.price, "EUR")}`}
       </button>
       <p className="mt-2 text-xs text-muted">
         Digital PDF — no shipping. It&apos;s emailed to you right after

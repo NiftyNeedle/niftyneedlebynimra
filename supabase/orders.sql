@@ -50,7 +50,7 @@ create table if not exists public.orders (
   shipping        numeric(10,2) not null default 0,
   tax             numeric(10,2) not null default 0,
   total           numeric(10,2) not null default 0,
-  currency        text not null default 'USD',
+  currency        text not null default 'EUR',
   tracking        text,
   created_at      timestamptz not null default now()
 );

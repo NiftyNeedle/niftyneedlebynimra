@@ -16,7 +16,7 @@ const resend = key ? new Resend(key) : null;
 
 const FROM = process.env.EMAIL_FROM || "Nifty Needle <onboarding@resend.dev>";
 const OWNER = process.env.NOTIFY_EMAIL || "niftyneedlebynimra@gmail.com";
-const money = (n: number) => `$${Number(n).toFixed(2)}`;
+const money = (n: number) => `€${Number(n).toFixed(2)}`;
 
 async function send(to: string, subject: string, html: string) {
   if (!resend || !to) return;

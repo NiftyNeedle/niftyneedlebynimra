@@ -69,7 +69,7 @@ export function PatternCard({
         )}
         <div className="mt-4 flex items-center justify-between">
           <span className="text-lg font-semibold text-foreground">
-            {pattern.isFree ? "Free" : format(pattern.price, "USD")}
+            {pattern.isFree ? "Free" : format(pattern.price, "EUR")}
           </span>
           <Link
             href={`/patterns/${pattern.slug}`}

@@ -53,7 +53,15 @@ export default async function ProductPage({
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-foreground">{product.name}</span>
       </nav>
-      <ProductDetail product={product} reviews={reviews} related={related} />
+      {/* Keyed per product so selections/quantity reset when navigating
+          straight from one product page to another (e.g. via "You may
+          also love"), instead of carrying the previous product's answers. */}
+      <ProductDetail
+        key={product.id}
+        product={product}
+        reviews={reviews}
+        related={related}
+      />
     </>
   );
 }

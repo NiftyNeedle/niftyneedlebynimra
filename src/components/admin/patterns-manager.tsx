@@ -356,7 +356,7 @@ function PatternForm({
             {!isFree && (
               <div className="mt-3">
                 <label className="mb-1.5 block text-sm font-medium text-foreground">
-                  Price (USD)
+                  Price (€)
                 </label>
                 <input
                   name="price"

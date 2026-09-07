@@ -13,8 +13,8 @@ import { CURRENCIES, isCurrency } from "@/lib/currency";
 interface CurrencyState {
   currency: string;
   setCurrency: (code: string) => void;
-  /** Format a USD base amount into the selected currency. */
-  format: (amountUsd: number, _ignore?: string) => string;
+  /** Format a EUR base amount into the selected currency. */
+  format: (amountEur: number, _ignore?: string) => string;
 }
 
 const CurrencyContext = createContext<CurrencyState | null>(null);
@@ -29,7 +29,7 @@ export function CurrencyProvider({
   rates: Record<string, number>;
 }) {
   const [currency, setCurrencyState] = useState(
-    isCurrency(initialCurrency) ? initialCurrency : "USD",
+    isCurrency(initialCurrency) ? initialCurrency : "EUR",
   );
 
   const setCurrency = useCallback((code: string) => {
@@ -43,7 +43,7 @@ export function CurrencyProvider({
   }, []);
 
   const format = useCallback(
-    (amountUsd: number) => {
+    (amountEur: number) => {
       const rate = rates[currency] ?? 1;
       const meta = CURRENCIES.find((c) => c.code === currency);
       const digits = meta?.digits ?? 2;
@@ -52,7 +52,7 @@ export function CurrencyProvider({
         currency,
         minimumFractionDigits: digits,
         maximumFractionDigits: digits,
-      }).format(amountUsd * rate);
+      }).format(amountEur * rate);
     },
     [currency, rates],
   );

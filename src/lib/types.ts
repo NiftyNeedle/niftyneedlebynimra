@@ -23,31 +23,58 @@ export interface ProductImage {
   alt: string;
 }
 
-/** A single choice within a customization dropdown (e.g. a yarn or size).
+/** How many photos one product can carry (the first is the cover). */
+export const MAX_PRODUCT_IMAGES = 5;
+
+/** A single choice within a customization field (e.g. a colour or size).
  *  `price` is added on top of the product's base price. */
 export interface CustomizationOption {
   label: string;
   price: number;
 }
 
-/** Which customization options a product offers to customers.
- *  When a product is customizable but this is absent, all are treated as on. */
+/** How a customization field is presented to the customer:
+ *  `choice` = pick one of the admin's options, `text` = one-line input,
+ *  `note` = multi-line input. Only `choice` fields can carry a price. */
+export type CustomizationFieldType = "choice" | "text" | "note";
+
+/** One admin-defined customization field. Every product defines its own
+ *  set, so a bouquet can ask for flower type while a blanket asks for
+ *  pattern and size — nothing is predefined. */
+export interface CustomizationField {
+  /** Slug of the label; stable identity for the field. */
+  id: string;
+  /** Shown to the customer, and used as the key in cart/order options. */
+  label: string;
+  type: CustomizationFieldType;
+  /** `choice` fields only — the first option is the default selection. */
+  options?: CustomizationOption[];
+  /** Hint shown inside a `text`/`note` field. */
+  placeholder?: string;
+  /** `text`/`note` fields only — a choice always has a value. */
+  required?: boolean;
+}
+
+/** What a product lets customers customize.
+ *  `fields` is the current shape; the flags below it are the old fixed
+ *  colour/yarn/size shape, still read for products saved before the
+ *  dynamic editor (see `customizationFields` in lib/customization.ts). */
 export interface ProductCustomization {
+  fields?: CustomizationField[];
+  /* ── legacy shape: read for back-compat, never written any more ── */
   color?: boolean;
-  /** Admin-defined colour choices; falls back to `product.colors`. */
   colorOptions?: CustomizationOption[];
   yarn?: boolean;
-  /** Admin-defined yarn choices; falls back to defaults when empty. */
   yarnOptions?: CustomizationOption[];
   size?: boolean;
-  /** Admin-defined size choices; falls back to defaults when empty. */
   sizeOptions?: CustomizationOption[];
   name?: boolean;
   giftMessage?: boolean;
   instructions?: boolean;
 }
 
-/** Every customization option enabled — the back-compat default. */
+/** Legacy default: a customizable product with no saved customization
+ *  offered every fixed option. Only used when converting old rows. */
 export const ALL_CUSTOMIZATION: ProductCustomization = {
   color: true,
   yarn: true,

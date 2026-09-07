@@ -29,6 +29,8 @@ interface ProductRow {
   review_count: number;
   swatch: string;
   image_url: string | null;
+  /** Gallery photos (up to 5). Absent until product-gallery.sql is run. */
+  image_urls?: string[] | null;
   colors: string[];
   materials: string[];
   short_description: string;
@@ -40,6 +42,10 @@ interface ProductRow {
 }
 
 function mapRow(r: ProductRow): Product {
+  // The gallery is the source of truth; `image_url` is the legacy cover and
+  // stands in when the gallery column/rows aren't populated yet.
+  const photos = (r.image_urls ?? []).filter(Boolean);
+  if (!photos.length && r.image_url) photos.push(r.image_url);
   return {
     id: r.id,
     slug: r.slug,
@@ -50,8 +56,11 @@ function mapRow(r: ProductRow): Product {
     currency: r.currency as Product["currency"],
     rating: Number(r.rating),
     reviewCount: r.review_count,
-    images: [{ url: r.image_url ?? "", alt: r.name }],
-    imageUrl: r.image_url ?? undefined,
+    images: photos.map((url, i) => ({
+      url,
+      alt: i === 0 ? r.name : `${r.name} — photo ${i + 1}`,
+    })),
+    imageUrl: photos[0],
     swatch: r.swatch,
     colors: r.colors ?? [],
     materials: r.materials ?? [],

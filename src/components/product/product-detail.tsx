@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   BadgeCheck,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   Minus,
   Plus,
@@ -12,9 +14,10 @@ import {
   Star,
   Truck,
 } from "lucide-react";
-import { type Product, ALL_CUSTOMIZATION } from "@/lib/types";
+import type { Product } from "@/lib/types";
 import type { Review } from "@/lib/reviews";
-import { DEFAULT_YARN_OPTIONS, DEFAULT_SIZE_OPTIONS } from "@/lib/customization";
+import { customizationFields, optionPrice } from "@/lib/customization";
+import { unitPriceFor } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/components/ui/toast";
@@ -38,65 +41,70 @@ export function ProductDetail({
   const { format } = useCurrency();
   const wishlisted = isWishlisted(product.id);
 
-  // Which options this product offers (all-on if customizable with none set).
-  const cz = product.customizable
-    ? product.customization ?? ALL_CUSTOMIZATION
-    : null;
+  // Whatever this product's admin decided it can be customized with.
+  const fields = useMemo(() => customizationFields(product), [product]);
 
-  // Per-product colour/yarn/size choices, falling back to defaults.
-  const colorTypes =
-    cz?.colorOptions && cz.colorOptions.length
-      ? cz.colorOptions
-      : product.colors.map((c) => ({ label: c, price: 0 }));
-  const yarnTypes =
-    cz?.yarnOptions && cz.yarnOptions.length
-      ? cz.yarnOptions
-      : DEFAULT_YARN_OPTIONS;
-  const sizes =
-    cz?.sizeOptions && cz.sizeOptions.length
-      ? cz.sizeOptions
-      : DEFAULT_SIZE_OPTIONS;
+  // One answer per field, keyed by label (also the cart option key).
+  // Choice fields start on their first option; text fields start empty.
+  const [answers, setAnswers] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      fields.map((f) => [
+        f.label,
+        f.type === "choice" ? f.options?.[0]?.label ?? "" : "",
+      ]),
+    ),
+  );
+  const answer = (f: (typeof fields)[number]) => answers[f.label] ?? "";
+  const setAnswer = (label: string, value: string) =>
+    setAnswers((prev) => ({ ...prev, [label]: value }));
 
-  const [color, setColor] = useState(colorTypes[0]?.label ?? "");
-  const [yarn, setYarn] = useState(yarnTypes[0]?.label ?? "");
-  const [size, setSize] = useState(sizes[0]?.label ?? "");
-  const [name, setName] = useState("");
-  const [giftMessage, setGiftMessage] = useState("");
-  const [instructions, setInstructions] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   const [tab, setTab] = useState<(typeof tabs)[number]>("Description");
 
-  const base = product.salePrice ?? product.price;
-  const colorAdd = cz?.color ? colorTypes.find((c) => c.label === color)?.price ?? 0 : 0;
-  const yarnAdd = cz?.yarn ? yarnTypes.find((y) => y.label === yarn)?.price ?? 0 : 0;
-  const sizeAdd = cz?.size ? sizes.find((s) => s.label === size)?.price ?? 0 : 0;
-
+  // Priced by the shared helper the cart and checkout use, so the number
+  // shown here is the number charged.
   const unitPrice = useMemo(
-    () => base + colorAdd + yarnAdd + sizeAdd,
-    [base, colorAdd, yarnAdd, sizeAdd],
+    () => unitPriceFor(product, answers),
+    [product, answers],
   );
 
   const productionDays = useMemo(() => {
-    let d = 5;
-    if (sizeAdd > 0) d += 3;
-    if (yarnAdd > 0) d += 2;
-    if ((cz?.name && name) || (cz?.giftMessage && giftMessage)) d += 1;
-    return d;
-  }, [sizeAdd, yarnAdd, name, giftMessage, cz]);
+    // Base turnaround, plus a little for up-charged choices (they take
+    // more work) and for anything hand-personalised.
+    const upcharged = fields.some(
+      (f) => optionPrice(f, answers[f.label]) > 0,
+    );
+    const personalised = fields.some(
+      (f) => f.type !== "choice" && (answers[f.label] ?? "").trim(),
+    );
+    return 5 + (upcharged ? 3 : 0) + (personalised ? 1 : 0);
+  }, [fields, answers]);
 
-  const hasPhoto = Boolean(product.imageUrl);
-  const gallery = [product.swatch, product.swatch, product.swatch, product.swatch];
+  // Up to MAX_PRODUCT_IMAGES photos; the swatch stands in when there are none.
+  const photos = product.images.map((i) => i.url).filter(Boolean);
+  const hasPhotos = photos.length > 0;
+  const canSwitch = photos.length > 1;
+  const go = (dir: number) =>
+    setActiveImg((i) => (i + dir + photos.length) % photos.length);
 
   const handleAdd = () => {
+    const missing = fields.find((f) => f.required && !answer(f).trim());
+    if (missing) {
+      toast(`Please fill in “${missing.label}” first.`, "info");
+      return;
+    }
+
+    // Only answered fields travel with the line (an empty optional note
+    // shouldn't clutter the cart, the order or the confirmation email).
     const options: Record<string, string> = {};
-    if (cz?.color && color) options.Colour = color;
-    if (cz?.yarn) options.Yarn = yarn;
-    if (cz?.size) options.Size = size;
-    if (cz?.name && name) options.Name = name;
+    for (const f of fields) {
+      const value = answer(f).trim();
+      if (value) options[f.label] = value;
+    }
     addToCart(product, {
       quantity,
-      options: cz && Object.keys(options).length ? options : undefined,
+      options: Object.keys(options).length ? options : undefined,
     });
     toast(`${product.name} added to cart`);
   };
@@ -106,43 +114,97 @@ export function ProductDetail({
       <div className="grid gap-12 lg:grid-cols-2">
         {/* Gallery */}
         <div className="lg:sticky lg:top-28 lg:self-start">
-          <motion.div
-            key={activeImg}
-            initial={{ opacity: 0.4, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="group relative aspect-square overflow-hidden rounded-[2rem] border border-border"
-            style={hasPhoto ? undefined : { background: gallery[activeImg] }}
+          <div
+            tabIndex={canSwitch ? 0 : undefined}
+            aria-roledescription={canSwitch ? "carousel" : undefined}
+            aria-label={
+              canSwitch
+                ? `${product.name} photos — use the left and right arrow keys to switch`
+                : undefined
+            }
+            onKeyDown={(e) => {
+              if (!canSwitch) return;
+              if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                go(-1);
+              } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                go(1);
+              }
+            }}
+            className="relative rounded-[2rem] outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {hasPhoto && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={product.imageUrl}
-                alt={product.name}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-espresso/10 to-transparent" />
-            {product.isNew && (
-              <span className="absolute left-5 top-5 rounded-full bg-sage-deep px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
-                New
-              </span>
-            )}
-          </motion.div>
-          {!hasPhoto && (
-            <div className="mt-4 grid grid-cols-4 gap-3">
-              {gallery.map((g, i) => (
+            <motion.div
+              key={activeImg}
+              initial={{ opacity: 0.4, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="group relative aspect-square overflow-hidden rounded-[2rem] border border-border"
+              style={hasPhotos ? undefined : { background: product.swatch }}
+            >
+              {hasPhotos && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={photos[activeImg]}
+                  alt={product.images[activeImg]?.alt ?? product.name}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-espresso/10 to-transparent" />
+              {product.isNew && (
+                <span className="absolute left-5 top-5 rounded-full bg-sage-deep px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+                  New
+                </span>
+              )}
+            </motion.div>
+
+            {canSwitch && (
+              <>
                 <button
-                  key={i}
+                  type="button"
+                  onClick={() => go(-1)}
+                  aria-label="Previous photo"
+                  className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-surface/85 text-foreground shadow-[var(--shadow-soft)] backdrop-blur transition-all hover:bg-surface hover:shadow-[var(--shadow-lift)]"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => go(1)}
+                  aria-label="Next photo"
+                  className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-surface/85 text-foreground shadow-[var(--shadow-soft)] backdrop-blur transition-all hover:bg-surface hover:shadow-[var(--shadow-lift)]"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                <span className="absolute bottom-4 right-4 rounded-full bg-espresso/70 px-2.5 py-1 text-xs font-medium text-white">
+                  {activeImg + 1} / {photos.length}
+                </span>
+              </>
+            )}
+          </div>
+
+          {canSwitch && (
+            <div className="mt-4 grid grid-cols-5 gap-3">
+              {photos.map((url, i) => (
+                <button
+                  key={`${i}-${url}`}
                   onClick={() => setActiveImg(i)}
-                  aria-label={`View image ${i + 1}`}
+                  aria-label={`View photo ${i + 1}`}
+                  aria-current={activeImg === i}
                   className={cn(
                     "aspect-square overflow-hidden rounded-2xl border-2 transition-all",
                     activeImg === i
                       ? "border-primary"
                       : "border-transparent opacity-70 hover:opacity-100",
                   )}
-                  style={{ background: g }}
-                />
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                </button>
               ))}
             </div>
           )}
@@ -192,122 +254,87 @@ export function ProductDetail({
             </span>
           </div>
 
-          {/* Customization */}
-          {product.customizable && (
+          {/* Customization — whatever fields this product defines */}
+          {fields.length > 0 && (
             <div className="mt-8 space-y-6 rounded-3xl border border-border bg-surface-muted/50 p-6">
               <p className="flex items-center gap-2 text-sm font-medium text-primary">
                 <BadgeCheck className="h-4 w-4" /> Customizable — make it yours
               </p>
 
-              {cz?.color && colorTypes.length > 0 && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">Colour</label>
-                  <div className="flex flex-wrap gap-2">
-                    {colorTypes.map((c) => (
-                      <button
-                        key={c.label}
-                        onClick={() => setColor(c.label)}
-                        className={cn(
-                          "rounded-full border px-4 py-2 text-sm transition-colors",
-                          color === c.label
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border hover:bg-surface",
-                        )}
+              {fields.map((f) => (
+                <div key={f.id}>
+                  <label
+                    htmlFor={`cz-${f.id}`}
+                    className="mb-2 block text-sm font-medium"
+                  >
+                    {f.label}{" "}
+                    {f.type !== "choice" && (
+                      <span className="text-muted">
+                        {f.required ? "(required)" : "(optional)"}
+                      </span>
+                    )}
+                  </label>
+
+                  {/* A handful of choices reads better as chips; a long
+                      list stays a dropdown. */}
+                  {f.type === "choice" &&
+                    ((f.options?.length ?? 0) <= 6 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {f.options?.map((o) => (
+                          <button
+                            key={o.label}
+                            type="button"
+                            onClick={() => setAnswer(f.label, o.label)}
+                            className={cn(
+                              "rounded-full border px-4 py-2 text-sm transition-colors",
+                              answer(f) === o.label
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border hover:bg-surface",
+                            )}
+                          >
+                            {o.label}
+                            {o.price ? ` (+${format(o.price)})` : ""}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <select
+                        id={`cz-${f.id}`}
+                        value={answer(f)}
+                        onChange={(e) => setAnswer(f.label, e.target.value)}
+                        className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
                       >
-                        {c.label}
-                        {c.price ? ` (+${format(c.price)})` : ""}
-                      </button>
+                        {f.options?.map((o) => (
+                          <option key={o.label} value={o.label}>
+                            {o.label}
+                            {o.price ? ` (+${format(o.price)})` : ""}
+                          </option>
+                        ))}
+                      </select>
                     ))}
-                  </div>
-                </div>
-              )}
 
-              {(cz?.yarn || cz?.size) && (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {cz?.yarn && (
-                    <div>
-                      <label className="mb-2 block text-sm font-medium">
-                        Yarn Type
-                      </label>
-                      <select
-                        value={yarn}
-                        onChange={(e) => setYarn(e.target.value)}
-                        className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        {yarnTypes.map((y) => (
-                          <option key={y.label} value={y.label}>
-                            {y.label}
-                            {y.price ? ` (+${format(y.price)})` : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  {f.type === "text" && (
+                    <input
+                      id={`cz-${f.id}`}
+                      value={answer(f)}
+                      onChange={(e) => setAnswer(f.label, e.target.value)}
+                      placeholder={f.placeholder}
+                      className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    />
                   )}
-                  {cz?.size && (
-                    <div>
-                      <label className="mb-2 block text-sm font-medium">Size</label>
-                      <select
-                        value={size}
-                        onChange={(e) => setSize(e.target.value)}
-                        className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        {sizes.map((s) => (
-                          <option key={s.label} value={s.label}>
-                            {s.label}
-                            {s.price ? ` (+${format(s.price)})` : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+
+                  {f.type === "note" && (
+                    <textarea
+                      id={`cz-${f.id}`}
+                      value={answer(f)}
+                      onChange={(e) => setAnswer(f.label, e.target.value)}
+                      rows={2}
+                      placeholder={f.placeholder}
+                      className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    />
                   )}
                 </div>
-              )}
-
-              {cz?.name && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Personalized Name{" "}
-                    <span className="text-muted">(optional)</span>
-                  </label>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Emma"
-                    className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-              )}
-
-              {cz?.giftMessage && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Gift Message <span className="text-muted">(optional)</span>
-                  </label>
-                  <textarea
-                    value={giftMessage}
-                    onChange={(e) => setGiftMessage(e.target.value)}
-                    rows={2}
-                    placeholder="A little note to include…"
-                    className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-              )}
-
-              {cz?.instructions && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Special Instructions{" "}
-                    <span className="text-muted">(optional)</span>
-                  </label>
-                  <textarea
-                    value={instructions}
-                    onChange={(e) => setInstructions(e.target.value)}
-                    rows={2}
-                    placeholder="Any special requests?"
-                    className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-              )}
+              ))}
 
               <p className="text-sm text-muted">
                 Estimated production time:{" "}

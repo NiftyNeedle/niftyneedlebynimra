@@ -200,7 +200,7 @@ export async function startCheckout(
     try {
       const c = await stripe.coupons.create({
         amount_off: Math.round(discount * 100),
-        currency: "usd",
+        currency: "eur",
         duration: "once",
         name: valid.code,
       });
@@ -230,7 +230,7 @@ export async function startCheckout(
     shipping,
     tax,
     total,
-    currency: "USD",
+    currency: "EUR",
     digital_only: digitalOnly,
     coupon_code: discount > 0 && valid ? valid.code : null,
     discount,
@@ -281,7 +281,7 @@ export async function startCheckout(
   const line_items = cleanItems.map((i) => ({
     quantity: i.quantity,
     price_data: {
-      currency: "usd",
+      currency: "eur",
       unit_amount: Math.round(i.price * 100),
       product_data: {
         name:
@@ -295,7 +295,7 @@ export async function startCheckout(
     line_items.push({
       quantity: 1,
       price_data: {
-        currency: "usd",
+        currency: "eur",
         unit_amount: Math.round(shipping * 100),
         product_data: { name: "Shipping" },
       },
@@ -304,7 +304,7 @@ export async function startCheckout(
     line_items.push({
       quantity: 1,
       price_data: {
-        currency: "usd",
+        currency: "eur",
         unit_amount: Math.round(tax * 100),
         product_data: { name: "Tax (5%)" },
       },

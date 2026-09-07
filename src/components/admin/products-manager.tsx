@@ -3,20 +3,33 @@
 import {
   useActionState,
   useEffect,
+  useMemo,
+  useRef,
   useState,
   useTransition,
+  type ChangeEvent,
   type Dispatch,
   type SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   type Product,
   type ProductCustomization,
-  type CustomizationOption,
-  ALL_CUSTOMIZATION,
+  type CustomizationFieldType,
+  MAX_PRODUCT_IMAGES,
 } from "@/lib/types";
-import { DEFAULT_YARN_OPTIONS, DEFAULT_SIZE_OPTIONS } from "@/lib/customization";
+import {
+  CUSTOMIZATION_FIELD_TYPES,
+  FIELD_PRESETS,
+  type DraftField,
+  type DraftOption,
+  customizationFields,
+  draftFromField,
+  draftFromPreset,
+  fieldFromDraft,
+  isUsableField,
+} from "@/lib/customization";
 import type { Category } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
@@ -196,47 +209,72 @@ function ProductForm({
   const [customizable, setCustomizable] = useState<boolean>(
     base ? Boolean(base.customizable) : false,
   );
-  const czDefaults: ProductCustomization = base?.customization ?? ALL_CUSTOMIZATION;
-
-  const [cz, setCz] = useState({
-    color: Boolean(czDefaults.color),
-    yarn: Boolean(czDefaults.yarn),
-    size: Boolean(czDefaults.size),
-    name: Boolean(czDefaults.name),
-    giftMessage: Boolean(czDefaults.giftMessage),
-    instructions: Boolean(czDefaults.instructions),
-  });
-  const [colorOptions, setColorOptions] = useState<CustomizationOption[]>(
-    base?.customization?.colorOptions?.length
-      ? base.customization.colorOptions
-      : (base?.colors ?? []).map((c) => ({ label: c, price: 0 })),
-  );
-  const [yarnOptions, setYarnOptions] = useState<CustomizationOption[]>(
-    base?.customization?.yarnOptions?.length
-      ? base.customization.yarnOptions
-      : DEFAULT_YARN_OPTIONS,
-  );
-  const [sizeOptions, setSizeOptions] = useState<CustomizationOption[]>(
-    base?.customization?.sizeOptions?.length
-      ? base.customization.sizeOptions
-      : DEFAULT_SIZE_OPTIONS,
+  // The product's own customization fields. Legacy products (fixed
+  // colour/yarn/size flags) are converted to fields on open, so editing
+  // one migrates it to the dynamic shape on save.
+  const [czFields, setCzFields] = useState<DraftField[]>(() =>
+    customizationFields(base ?? {}).map(draftFromField),
   );
 
-  const setczKey = (key: keyof typeof cz, val: boolean) =>
-    setCz((prev) => ({ ...prev, [key]: val }));
+  // ── Photo gallery (max MAX_PRODUCT_IMAGES) ─────────────────────────
+  // `keptImages` are already-uploaded URLs the admin wants to keep; they
+  // go back as hidden `existingImages` fields. `newFiles` are the pending
+  // uploads, mirrored into the file input so removals actually stick.
+  const [keptImages, setKeptImages] = useState<string[]>(() =>
+    (base?.images ?? []).map((i) => i.url).filter(Boolean),
+  );
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const remaining = MAX_PRODUCT_IMAGES - keptImages.length - newFiles.length;
+
+  const newPreviews = useMemo(
+    () => newFiles.map((f) => URL.createObjectURL(f)),
+    [newFiles],
+  );
+  useEffect(
+    () => () => newPreviews.forEach((u) => URL.revokeObjectURL(u)),
+    [newPreviews],
+  );
+
+  const setPendingFiles = (files: File[]) => {
+    setNewFiles(files);
+    // Rewrite the input's FileList so the form submits exactly this set.
+    if (fileInputRef.current) {
+      const dt = new DataTransfer();
+      files.forEach((f) => dt.items.add(f));
+      fileInputRef.current.files = dt.files;
+    }
+  };
+
+  const onPickFiles = (e: ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? []);
+    const room = Math.max(0, remaining);
+    if (picked.length > room) {
+      toast(
+        `Up to ${MAX_PRODUCT_IMAGES} photos per product — the extra files were skipped.`,
+        "info",
+      );
+    }
+    setPendingFiles([...newFiles, ...picked.slice(0, room)]);
+  };
+
+  const photoSlots = [
+    ...keptImages.map((url, i) => ({
+      key: `kept-${i}-${url}`,
+      src: url,
+      pending: false,
+      remove: () => setKeptImages(keptImages.filter((_, j) => j !== i)),
+    })),
+    ...newFiles.map((f, i) => ({
+      key: `new-${i}-${f.name}`,
+      src: newPreviews[i],
+      pending: true,
+      remove: () => setPendingFiles(newFiles.filter((_, j) => j !== i)),
+    })),
+  ];
 
   const builtCustomization: ProductCustomization | null = customizable
-    ? {
-        color: cz.color,
-        ...(cz.color ? { colorOptions } : {}),
-        yarn: cz.yarn,
-        ...(cz.yarn ? { yarnOptions } : {}),
-        size: cz.size,
-        ...(cz.size ? { sizeOptions } : {}),
-        name: cz.name,
-        giftMessage: cz.giftMessage,
-        instructions: cz.instructions,
-      }
+    ? { fields: czFields.map(fieldFromDraft).filter(isUsableField) }
     : null;
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
@@ -310,7 +348,7 @@ function ProductForm({
           </div>
 
           <div>
-            <label className={label}>Price *</label>
+            <label className={label}>Price (€) *</label>
             <input
               name="price"
               type="number"
@@ -321,7 +359,7 @@ function ProductForm({
             />
           </div>
           <div>
-            <label className={label}>Sale price (optional)</label>
+            <label className={label}>Sale price (€, optional)</label>
             <input
               name="salePrice"
               type="number"
@@ -333,7 +371,10 @@ function ProductForm({
 
           <div>
             <label className={label}>Currency</label>
-            <input name="currency" defaultValue={base?.currency ?? "USD"} className={field} />
+            <input type="hidden" name="currency" value="EUR" />
+            <p className="rounded-xl border border-border bg-surface-muted/50 px-4 py-2.5 text-sm text-muted">
+              Euro (€) — the storefront converts to the visitor&apos;s currency.
+            </p>
           </div>
 
           <div className="sm:col-span-2">
@@ -357,25 +398,64 @@ function ProductForm({
           </div>
 
           <div className="sm:col-span-2">
-            <label className={label}>Product photo</label>
-            {base?.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={base.imageUrl}
-                alt=""
-                className="mb-2 h-24 w-24 rounded-xl object-cover"
-              />
+            <label className={label}>
+              Product photos{" "}
+              <span className="font-normal text-muted">
+                (up to {MAX_PRODUCT_IMAGES})
+              </span>
+            </label>
+
+            {photoSlots.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2.5">
+                {photoSlots.map((s, i) => (
+                  <div key={s.key} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={s.src}
+                      alt=""
+                      className="h-24 w-24 rounded-xl border border-border object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={s.remove}
+                      aria-label="Remove photo"
+                      className="absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-espresso text-white shadow-sm transition-colors hover:bg-accent"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="absolute bottom-1 left-1 rounded-full bg-espresso/80 px-1.5 py-0.5 text-[0.6rem] font-medium text-white">
+                      {i === 0 ? "Cover" : s.pending ? "New" : i + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
+
+            {/* Photos kept on save — anything removed above is dropped. */}
+            {keptImages.map((url, i) => (
+              <input
+                key={`${i}-${url}`}
+                type="hidden"
+                name="existingImages"
+                value={url}
+              />
+            ))}
+
             <input
-              name="image"
+              ref={fileInputRef}
+              name="images"
               type="file"
               accept="image/*"
+              multiple
+              onChange={onPickFiles}
               className="block w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground"
             />
             <p className="mt-1 text-xs text-muted">
-              {editing
-                ? "Leave empty to keep the current photo."
-                : "Optional — a colour swatch is used if no photo is added."}
+              {remaining > 0
+                ? `Add up to ${remaining} more — the first photo is the cover, and customers page through the rest with arrows.`
+                : `Limit reached (${MAX_PRODUCT_IMAGES} photos). Remove one to add another.`}
+              {photoSlots.length === 0 &&
+                " A colour swatch is used if no photo is added."}
             </p>
           </div>
 
@@ -429,58 +509,19 @@ function ProductForm({
             <div className="min-w-0 space-y-4 rounded-2xl border border-border p-3 sm:col-span-2 sm:p-4">
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Customization options shown to customers
+                  What can customers customize?
                 </p>
                 <p className="mt-0.5 text-xs text-muted">
-                  Tick what this product should offer, then list the choices for
-                  each (with an optional extra price).
+                  Add a field for anything this product needs — flower type,
+                  pattern, size, a name to embroider. A field is either a set
+                  of choices (each with an optional extra price) or a box the
+                  customer types in.
                 </p>
               </div>
-
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                {(
-                  [
-                    { key: "color", label: "Choose colour" },
-                    { key: "yarn", label: "Choose yarn type" },
-                    { key: "size", label: "Choose size" },
-                    { key: "name", label: "Personalised name" },
-                    { key: "giftMessage", label: "Gift message" },
-                    { key: "instructions", label: "Special instructions" },
-                  ] as { key: keyof typeof cz; label: string }[]
-                ).map((o) => (
-                  <label key={o.key} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={cz[o.key]}
-                      onChange={(e) => setczKey(o.key, e.target.checked)}
-                      className="h-4 w-4 accent-[var(--color-primary)]"
-                    />
-                    {o.label}
-                  </label>
-                ))}
-              </div>
-
-              {cz.color && (
-                <OptionListEditor
-                  title="Colour choices"
-                  options={colorOptions}
-                  setOptions={setColorOptions}
-                />
-              )}
-              {cz.yarn && (
-                <OptionListEditor
-                  title="Yarn choices"
-                  options={yarnOptions}
-                  setOptions={setYarnOptions}
-                />
-              )}
-              {cz.size && (
-                <OptionListEditor
-                  title="Size choices"
-                  options={sizeOptions}
-                  setOptions={setSizeOptions}
-                />
-              )}
+              <CustomizationFieldsEditor
+                fields={czFields}
+                setFields={setCzFields}
+              />
             </div>
           )}
 
@@ -512,23 +553,183 @@ function ProductForm({
   );
 }
 
+function CustomizationFieldsEditor({
+  fields,
+  setFields,
+}: {
+  fields: DraftField[];
+  setFields: Dispatch<SetStateAction<DraftField[]>>;
+}) {
+  const update = (i: number, patch: Partial<DraftField>) =>
+    setFields((prev) => prev.map((f, j) => (j === i ? { ...f, ...patch } : f)));
+
+  const remove = (i: number) =>
+    setFields((prev) => prev.filter((_, j) => j !== i));
+
+  const move = (i: number, dir: -1 | 1) =>
+    setFields((prev) => {
+      const j = i + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+
+  const add = (preset?: (typeof FIELD_PRESETS)[number]) =>
+    setFields((prev) => [...prev, draftFromPreset(preset)]);
+
+  const setOptions =
+    (i: number): Dispatch<SetStateAction<DraftOption[]>> =>
+    (value) =>
+      setFields((prev) =>
+        prev.map((f, j) =>
+          j === i
+            ? {
+                ...f,
+                options: typeof value === "function" ? value(f.options) : value,
+              }
+            : f,
+        ),
+      );
+
+  return (
+    <div className="min-w-0 space-y-3">
+      {fields.map((f, i) => (
+        <div
+          key={f.key}
+          className="min-w-0 rounded-xl border border-border bg-surface-muted/40 p-2.5 sm:p-3"
+        >
+          <div className="flex min-w-0 items-start gap-2">
+            <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[1fr_9rem]">
+              <input
+                value={f.label}
+                onChange={(e) => update(i, { label: e.target.value })}
+                placeholder="What to customize (e.g. Flower Type)"
+                aria-label="Field name"
+                className="w-0 min-w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+              <select
+                value={f.type}
+                onChange={(e) =>
+                  update(i, { type: e.target.value as CustomizationFieldType })
+                }
+                aria-label="Field type"
+                className="w-full min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              >
+                {CUSTOMIZATION_FIELD_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex shrink-0 items-center">
+              <button
+                type="button"
+                onClick={() => move(i, -1)}
+                disabled={i === 0}
+                aria-label="Move field up"
+                className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface hover:text-foreground disabled:opacity-30"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => move(i, 1)}
+                disabled={i === fields.length - 1}
+                aria-label="Move field down"
+                className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface hover:text-foreground disabled:opacity-30"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                aria-label="Remove field"
+                className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-surface hover:text-accent"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {f.type === "choice" ? (
+            <OptionListEditor
+              title={`${f.label.trim() || "Field"} choices`}
+              options={f.options}
+              setOptions={setOptions(i)}
+            />
+          ) : (
+            <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
+              <input
+                value={f.placeholder}
+                onChange={(e) => update(i, { placeholder: e.target.value })}
+                placeholder="Hint shown inside the box (optional)"
+                aria-label="Placeholder"
+                className="w-0 min-w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+              <label className="flex items-center gap-2 whitespace-nowrap text-sm">
+                <input
+                  type="checkbox"
+                  checked={f.required}
+                  onChange={(e) => update(i, { required: e.target.checked })}
+                  className="h-4 w-4 accent-[var(--color-primary)]"
+                />
+                Required
+              </label>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {fields.length === 0 && (
+        <p className="text-xs text-muted">
+          No customization fields yet — add one below.
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => add()}
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add field
+        </button>
+        <span className="text-xs text-muted">or start from:</span>
+        {FIELD_PRESETS.map((p) => (
+          <button
+            key={p.label}
+            type="button"
+            onClick={() => add(p)}
+            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface-muted"
+          >
+            + {p.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function OptionListEditor({
   title,
   options,
   setOptions,
 }: {
   title: string;
-  options: CustomizationOption[];
-  setOptions: Dispatch<SetStateAction<CustomizationOption[]>>;
+  options: DraftOption[];
+  setOptions: Dispatch<SetStateAction<DraftOption[]>>;
 }) {
-  const update = (i: number, patch: Partial<CustomizationOption>) =>
+  const update = (i: number, patch: Partial<DraftOption>) =>
     setOptions((prev) => prev.map((o, j) => (j === i ? { ...o, ...patch } : o)));
   const remove = (i: number) =>
     setOptions((prev) => prev.filter((_, j) => j !== i));
-  const add = () => setOptions((prev) => [...prev, { label: "", price: 0 }]);
+  const add = () => setOptions((prev) => [...prev, { label: "", price: "" }]);
 
   return (
-    <div className="min-w-0 rounded-xl bg-surface-muted/50 p-2.5 sm:p-3">
+    <div className="mt-2 min-w-0 rounded-xl bg-surface-muted/50 p-2.5 sm:p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-medium text-foreground">{title}</span>
         <button
@@ -550,14 +751,16 @@ function OptionListEditor({
             />
             <div className="relative w-16 shrink-0 sm:w-24">
               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted">
-                +$
+                +€
               </span>
+              {/* Free text so it can be left empty; empty saves as 0. */}
               <input
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 value={o.price}
-                onChange={(e) => update(i, { price: Number(e.target.value) })}
+                onChange={(e) => update(i, { price: e.target.value })}
+                placeholder="0"
+                aria-label="Extra price for this option"
                 className="w-full rounded-lg border border-border bg-surface py-2 pl-7 pr-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -576,7 +779,8 @@ function OptionListEditor({
         )}
       </div>
       <p className="mt-2 text-xs text-muted">
-        The first option is the default. Price is added to the base price.
+        The first choice is the default. Leave the price empty (or 0) for no
+        extra charge — anything else is added to the base price.
       </p>
     </div>
   );

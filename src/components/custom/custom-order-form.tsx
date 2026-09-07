@@ -214,11 +214,11 @@ export function CustomOrderForm() {
             </div>
             <div>
               <label className={labelCls}>Budget</label>
-              <select name="budget" className={field} defaultValue="$50 – $100">
-                <option>Under $50</option>
-                <option>$50 – $100</option>
-                <option>$100 – $200</option>
-                <option>$200+</option>
+              <select name="budget" className={field} defaultValue="€50 – €100">
+                <option>Under €50</option>
+                <option>€50 – €100</option>
+                <option>€100 – €200</option>
+                <option>€200+</option>
               </select>
             </div>
             <div>
