@@ -112,6 +112,25 @@ function sanitizeCustomization(raw: unknown): ProductCustomization | null {
   return { fields };
 }
 
+/**
+ * True when a write failed only because the target column doesn't exist
+ * yet — i.e. a migration hasn't been run. Postgres reports 42703
+ * (undefined_column); Supabase's API layer reports PGRST204 with
+ * "Could not find the 'x' column of 'y' in the schema cache" when its
+ * cached schema predates the migration.
+ */
+function isMissingColumn(
+  error: { code?: string; message?: string } | null,
+  column: string,
+) {
+  if (!error) return false;
+  return (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    (error.message ?? "").includes(column)
+  );
+}
+
 function revalidateStore(slug?: string) {
   revalidatePath("/");
   revalidatePath("/shop");
@@ -208,7 +227,7 @@ export async function upsertProduct(
         : admin.from("products").insert(payload);
 
     let { error } = await write(row);
-    if (error?.code === "42703") {
+    if (isMissingColumn(error, "image_urls")) {
       // supabase/product-gallery.sql hasn't been run yet — save the cover
       // photo only so the admin keeps working until the migration lands.
       const { image_urls: _gallery, ...withoutGallery } = row;

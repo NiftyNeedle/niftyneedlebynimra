@@ -17,3 +17,7 @@ update public.products
 
 -- `image_url` is kept in sync with image_urls[1] by the admin panel and
 -- still powers cards, cart thumbnails and emails.
+
+-- Refresh the API schema cache so saves stop reporting
+-- "Could not find the 'image_urls' column ... in the schema cache".
+notify pgrst, 'reload schema';
