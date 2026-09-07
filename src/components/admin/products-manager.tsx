@@ -34,7 +34,7 @@ import {
 } from "@/lib/customization";
 import type { Category } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
-import { suggestColors } from "@/lib/colors";
+import { suggestOptions } from "@/lib/option-suggestions";
 import { useToast } from "@/components/ui/toast";
 import { upsertProduct, deleteProduct, type ActionState } from "@/app/admin/products/actions";
 
@@ -731,6 +731,7 @@ function CustomizationFieldsEditor({
           {f.type === "choice" ? (
             <OptionListEditor
               title={`${f.label.trim() || "Field"} choices`}
+              fieldLabel={f.label}
               options={f.options}
               setOptions={setOptions(i)}
             />
@@ -790,10 +791,13 @@ function CustomizationFieldsEditor({
 
 function OptionListEditor({
   title,
+  fieldLabel,
   options,
   setOptions,
 }: {
   title: string;
+  /** Drives which suggestions (if any) the option boxes offer. */
+  fieldLabel: string;
   options: DraftOption[];
   setOptions: Dispatch<SetStateAction<DraftOption[]>>;
 }) {
@@ -862,6 +866,7 @@ function OptionListEditor({
               value={o.label}
               onChange={(value) => setLabel(i, value)}
               onEnter={() => addAfter(i)}
+              fieldLabel={fieldLabel}
               usedLabels={options.map((x) => x.label)}
             />
             <div className="relative w-16 shrink-0 sm:w-24">
@@ -895,8 +900,8 @@ function OptionListEditor({
       </div>
       <p className="mt-2 text-xs text-muted">
         The first choice is the default. Leave the price empty (or 0) for no
-        extra charge. Press Enter for the next row, or paste a list like
-        “Red, Purple, Pink” to fill several at once.
+        extra charge. Press Enter for the next row, or paste a comma-separated
+        list to fill several at once.
       </p>
     </div>
   );
@@ -914,16 +919,22 @@ const OptionLabelInput = forwardRef<
     value: string;
     onChange: (value: string) => void;
     onEnter: () => void;
+    fieldLabel: string;
     usedLabels: string[];
   }
->(function OptionLabelInput({ value, onChange, onEnter, usedLabels }, ref) {
+>(function OptionLabelInput(
+  { value, onChange, onEnter, fieldLabel, usedLabels },
+  ref,
+) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const listId = useId();
 
+  // Suggestions follow the field's name: colours for a colour field,
+  // sizes for a size field, nothing for e.g. "Flower Type".
   const matches = useMemo(
-    () => suggestColors(value, usedLabels),
-    [value, usedLabels],
+    () => suggestOptions(fieldLabel, value, usedLabels),
+    [fieldLabel, value, usedLabels],
   );
   const showList = open && matches.length > 0;
   // Keep the highlight inside the list even if it shrank as the admin typed.
@@ -1004,10 +1015,12 @@ const OptionLabelInput = forwardRef<
                   i === active ? "bg-surface-muted" : "hover:bg-surface-muted",
                 )}
               >
-                <span
-                  className="h-3.5 w-3.5 shrink-0 rounded-full border border-border"
-                  style={{ background: c.hex }}
-                />
+                {c.hex && (
+                  <span
+                    className="h-3.5 w-3.5 shrink-0 rounded-full border border-border"
+                    style={{ background: c.hex }}
+                  />
+                )}
                 {c.name}
               </button>
             </li>
